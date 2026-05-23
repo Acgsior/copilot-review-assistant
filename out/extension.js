@@ -51,9 +51,6 @@ function activate(context) {
         thread.canReply = true;
         thread.collapsibleState = vscode.CommentThreadCollapsibleState.Expanded;
         thread.label = 'Draft Comment';
-        setTimeout(() => {
-            vscode.commands.executeCommand('workbench.action.focusComment');
-        }, 100);
     });
     const addDraftCmd = vscode.commands.registerCommand('copilotReview.addDraft', async (reply) => {
         const userSuggestion = reply.text;
@@ -90,6 +87,12 @@ function activate(context) {
         }
         catch (error) {
             vscode.window.showErrorMessage(`Failed to add draft: ${error}`);
+        }
+    });
+    const cancelDraftCmd = vscode.commands.registerCommand('copilotReview.cancelDraft', (reply) => {
+        const thread = reply.thread || reply;
+        if (thread) {
+            thread.dispose();
         }
     });
     const submitDraftsCmd = vscode.commands.registerCommand('copilotReview.submitDrafts', async () => {
@@ -129,16 +132,16 @@ function activate(context) {
             }
         }, undefined, context.subscriptions);
     });
-    const deleteDraftCmd = vscode.commands.registerCommand('copilotReview.deleteDraft', (draftId) => {
-        if (draftId) {
-            draftsProvider.removeDraft(draftId);
+    const deleteDraftCmd = vscode.commands.registerCommand('copilotReview.deleteDraft', (arg) => {
+        let id;
+        if (typeof arg === 'string') {
+            id = arg;
         }
-        else {
-            // fallback if called with context from treeview
-            const id = arguments[0]?.id;
-            if (id) {
-                draftsProvider.removeDraft(id);
-            }
+        else if (arg && typeof arg === 'object') {
+            id = arg.draftId || arg.id;
+        }
+        if (id) {
+            draftsProvider.removeDraft(id);
         }
     });
     const editDraftCmd = vscode.commands.registerCommand('copilotReview.editDraft', (comment) => {
@@ -164,11 +167,11 @@ function activate(context) {
         }
         comment.parent.comments = [...comment.parent.comments];
     });
-    context.subscriptions.push(createReviewThreadCmd, addDraftCmd, submitDraftsCmd, deleteDraftCmd, editDraftCmd, saveDraftEditCmd);
+    context.subscriptions.push(createReviewThreadCmd, addDraftCmd, cancelDraftCmd, submitDraftsCmd, deleteDraftCmd, editDraftCmd, saveDraftEditCmd);
 }
 function deactivate() { }
 function getWebviewContent(drafts) {
-    const escapeHtml = (unsafe) => unsafe
+    const escapeHtml = (unsafe) => (unsafe ? String(unsafe) : "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")

@@ -15,7 +15,7 @@ class DraftsWebviewProvider {
             enableScripts: true,
             localResourceRoots: [this._extensionUri]
         };
-        webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+        webviewView.webview.html = this._getHtmlForWebview(webviewView.webview, this.drafts);
         webviewView.webview.onDidReceiveMessage(data => {
             switch (data.type) {
                 case 'deleteDraft':
@@ -26,6 +26,19 @@ class DraftsWebviewProvider {
                     if (draft) {
                         vscode.window.showTextDocument(draft.uri, {
                             selection: draft.range
+                        });
+                    }
+                    break;
+                case 'editDraft':
+                    const editDraft = this.drafts.find(d => d.id === data.id);
+                    if (editDraft) {
+                        vscode.window.showTextDocument(editDraft.uri, {
+                            selection: editDraft.range
+                        }).then(() => {
+                            const comment = editDraft.thread.comments.find((c) => c.draftId === data.id);
+                            if (comment) {
+                                vscode.commands.executeCommand('copilotReview.editDraft', comment);
+                            }
                         });
                     }
                     break;
@@ -72,7 +85,14 @@ class DraftsWebviewProvider {
                 })) });
         }
     }
-    _getHtmlForWebview(_webview) {
+    _getHtmlForWebview(_webview, drafts) {
+        const initialDraftsJson = JSON.stringify(drafts.map(d => ({
+            id: d.id,
+            text: d.text,
+            filePath: vscode.workspace.asRelativePath(d.uri),
+            line: d.range.start.line + 1,
+            sequence: d.sequence
+        })));
         return `<!DOCTYPE html>
             <html lang="en">
             <head>
@@ -120,15 +140,22 @@ class DraftsWebviewProvider {
                         white-space: pre-wrap;
                         color: var(--vscode-foreground);
                     }
-                    .delete-btn {
+                    .draft-actions {
+                        display: flex;
+                        gap: 4px;
+                    }
+                    .icon-btn {
                         background: none;
                         border: none;
-                        color: var(--vscode-errorForeground);
+                        color: var(--vscode-icon-foreground);
                         cursor: pointer;
                         padding: 4px;
                         opacity: 0.7;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
                     }
-                    .delete-btn:hover {
+                    .icon-btn:hover {
                         opacity: 1;
                         background-color: var(--vscode-toolbar-hoverBackground);
                         border-radius: 3px;
@@ -148,6 +175,7 @@ class DraftsWebviewProvider {
                 <script>
                     const vscode = acquireVsCodeApi();
                     const container = document.getElementById('drafts-container');
+                    const initialDrafts = ${initialDraftsJson};
 
                     window.addEventListener('message', event => {
                         const message = event.data;
@@ -157,6 +185,9 @@ class DraftsWebviewProvider {
                                 break;
                         }
                     });
+
+                    // Initial render
+                    renderDrafts(initialDrafts);
 
                     function renderDrafts(drafts) {
                         if (drafts.length === 0) {
@@ -182,16 +213,32 @@ class DraftsWebviewProvider {
                             const sequenceStr = draft.sequence ? '#' + draft.sequence + ' ' : '';
                             fileInfo.textContent = sequenceStr + draft.filePath + ':' + draft.line;
 
+                            const actionsDiv = document.createElement('div');
+                            actionsDiv.className = 'draft-actions';
+
+                            const editBtn = document.createElement('button');
+                            editBtn.className = 'icon-btn';
+                            editBtn.title = 'Edit Draft';
+                            editBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M13.23 1h-1.46L3.52 9.25l-.16.22L1 13.59 2.41 15l4.12-2.36.22-.16L15 4.23V2.77L13.23 1zM2.41 13.59l1.51-3 1.48 1.48-2.99 1.52zm1.88-3.7l7.57-7.57 1.84 1.84-7.57 7.57-1.84-1.84zM14 3.47l-1.45-1.45.71-.71L14.71 2.76 14 3.47z"/></svg>';
+                            editBtn.onclick = (e) => {
+                                e.stopPropagation();
+                                vscode.postMessage({ type: 'editDraft', id: draft.id });
+                            };
+
                             const deleteBtn = document.createElement('button');
-                            deleteBtn.className = 'delete-btn';
-                            deleteBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M10 3h3v1h-1v9l-1 1H4l-1-1V4H2V3h3V2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v1zM9 2H6v1h3V2zM4 13h7V4H4v9zm2-8H5v7h1V5zm1 0h1v7H7V5zm2 0h1v7H9V5z"/></svg>';
+                            deleteBtn.className = 'icon-btn';
+                            deleteBtn.title = 'Cancel Draft';
+                            deleteBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M8 8.707l3.646 3.647.708-.707L8.707 8l3.647-3.646-.707-.708L8 7.293 4.354 3.646l-.707.708L7.293 8l-3.646 3.646.707.707L8 8.707z"/></svg>';
                             deleteBtn.onclick = (e) => {
                                 e.stopPropagation();
                                 vscode.postMessage({ type: 'deleteDraft', id: draft.id });
                             };
 
+                            actionsDiv.appendChild(editBtn);
+                            actionsDiv.appendChild(deleteBtn);
+
                             header.appendChild(fileInfo);
-                            header.appendChild(deleteBtn);
+                            header.appendChild(actionsDiv);
 
                             const text = document.createElement('div');
                             text.className = 'draft-text';

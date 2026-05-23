@@ -4,7 +4,7 @@
   "description": "Send code snippets and review plans to Copilot Chat seamlessly via inline comments.",
   "publisher": "morganqin",
   "author": "Morgan Qin",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "icon": "icon.png",
   "engines": {
     "vscode": "^1.80.0"
@@ -25,6 +25,11 @@
         "command": "copilotReview.addDraft",
         "title": "Add to Draft",
         "icon": "$(save)"
+      },
+      {
+        "command": "copilotReview.cancelDraft",
+        "title": "Cancel",
+        "icon": "$(close)"
       },
       {
         "command": "copilotReview.submitDrafts",
@@ -60,7 +65,7 @@
       "copilot-review": [
         {
           "id": "copilotReview.draftsView",
-          "name": "Drafts",
+          "name": "Review: Draft Comment",
           "type": "webview",
           "contextualTitle": "Plan Review Drafts"
         }
@@ -76,14 +81,23 @@
       ],
       "comments/commentThread/context": [
         {
+          "command": "copilotReview.cancelDraft",
+          "group": "inline@1"
+        },
+        {
           "command": "copilotReview.addDraft",
-          "group": "inline"
+          "group": "inline@2"
         }
       ],
       "comments/comment/title": [
         {
           "command": "copilotReview.editDraft",
-          "group": "inline",
+          "group": "inline@1",
+          "when": "comment == draft"
+        },
+        {
+          "command": "copilotReview.deleteDraft",
+          "group": "inline@2",
           "when": "comment == draft"
         },
         {

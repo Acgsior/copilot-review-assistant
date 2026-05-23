@@ -2,6 +2,19 @@
 
 All notable changes to the "copilot-review-assistant" extension will be documented in this file.
 
+## [0.0.7] - 2026-05-24
+### Added
+- Added a Cancel button to the left of the "Add to Draft" button in the inline comment thread.
+- Added a Delete button next to the Edit icon for already added Draft Comments.
+- Added an Edit button to the sidebar card of "Review: Draft Comment" to allow quick edit jumping.
+- Sidebar view now correctly displays previously added draft comments upon initial load.
+### Changed
+- Replaced the trash icon in the Draft Comment sidebar with an X (Cancel) icon.
+- Renamed sidebar panel from "Drafts" to "Review: Draft Comment".
+### Fixed
+- Fixed focus management during Draft Comment creation/editing by removing invalid command `workbench.action.focusComment`.
+- Fixed the "unsafe.replace is not a function" error when submitting the final review.
+
 ## [0.0.6] - 2026-05-24
 ### Added
 - Unified the delete button icons using VS Code native-like inline SVGs in both Webviews.

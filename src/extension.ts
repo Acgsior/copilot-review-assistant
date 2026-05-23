@@ -55,10 +55,6 @@ export function activate(context: vscode.ExtensionContext) {
         thread.canReply = true;
         thread.collapsibleState = vscode.CommentThreadCollapsibleState.Expanded;
         thread.label = 'Draft Comment';
-
-        setTimeout(() => {
-            vscode.commands.executeCommand('workbench.action.focusComment');
-        }, 100);
     });
 
     const addDraftCmd = vscode.commands.registerCommand('copilotReview.addDraft', async (reply: vscode.CommentReply) => {
@@ -111,6 +107,13 @@ export function activate(context: vscode.ExtensionContext) {
 
         } catch (error) {
             vscode.window.showErrorMessage(`Failed to add draft: ${error}`);
+        }
+    });
+
+    const cancelDraftCmd = vscode.commands.registerCommand('copilotReview.cancelDraft', (reply: vscode.CommentReply | vscode.CommentThread) => {
+        const thread = (reply as vscode.CommentReply).thread || reply as vscode.CommentThread;
+        if (thread) {
+            thread.dispose();
         }
     });
 
@@ -167,15 +170,16 @@ export function activate(context: vscode.ExtensionContext) {
         );
     });
 
-    const deleteDraftCmd = vscode.commands.registerCommand('copilotReview.deleteDraft', (draftId: string) => {
-        if (draftId) {
-            draftsProvider.removeDraft(draftId);
-        } else {
-            // fallback if called with context from treeview
-            const id = (arguments[0] as any)?.id;
-            if (id) {
-                 draftsProvider.removeDraft(id);
-            }
+    const deleteDraftCmd = vscode.commands.registerCommand('copilotReview.deleteDraft', (arg: any) => {
+        let id: string | undefined;
+        if (typeof arg === 'string') {
+            id = arg;
+        } else if (arg && typeof arg === 'object') {
+            id = arg.draftId || arg.id;
+        }
+        
+        if (id) {
+            draftsProvider.removeDraft(id);
         }
     });
 
@@ -209,6 +213,7 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         createReviewThreadCmd, 
         addDraftCmd, 
+        cancelDraftCmd,
         submitDraftsCmd,
         deleteDraftCmd,
         editDraftCmd,
@@ -219,7 +224,7 @@ export function activate(context: vscode.ExtensionContext) {
 export function deactivate() {}
 
 function getWebviewContent(drafts: DraftItem[]) {
-    const escapeHtml = (unsafe: string) => unsafe
+    const escapeHtml = (unsafe: any) => (unsafe ? String(unsafe) : "")
          .replace(/&/g, "&amp;")
          .replace(/</g, "&lt;")
          .replace(/>/g, "&gt;")
