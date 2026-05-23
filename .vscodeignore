@@ -1,0 +1,15 @@
+.vscode/**
+.vscode-test/**
+node_modules/**
+src/**
+.gitignore
+.yarnrc
+.yarnrc.yml
+.yarn/**
+**/*.map
+**/*.ts
+**/*.tsx
+.eslintrc.json
+.prettierrc
+tsconfig.json
+PLAN.md

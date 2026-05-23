@@ -1,0 +1,104 @@
+{
+  "name": "antigravity-plan-review",
+  "displayName": "Antigravity Plan Review",
+  "description": "Send code snippets and review plans to Copilot Chat seamlessly via inline comments.",
+  "publisher": "morganqin",
+  "version": "0.0.2",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "antigravity.createReviewThread",
+        "title": "Start AI Plan Review",
+        "icon": "$(comment-add)"
+      },
+      {
+        "command": "antigravity.addDraft",
+        "title": "Add to Draft",
+        "icon": "$(save)"
+      },
+      {
+        "command": "antigravity.submitDrafts",
+        "title": "Submit Drafts to Copilot",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "antigravity.deleteDraft",
+        "title": "Delete Draft",
+        "icon": "$(trash)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "antigravity-review",
+          "title": "Plan Review",
+          "icon": "$(comment-discussion)"
+        }
+      ]
+    },
+    "views": {
+      "antigravity-review": [
+        {
+          "id": "antigravity.draftsView",
+          "name": "Drafts",
+          "contextualTitle": "Plan Review Drafts"
+        }
+      ]
+    },
+    "menus": {
+      "editor/context": [
+        {
+          "when": "editorHasSelection",
+          "command": "antigravity.createReviewThread",
+          "group": "1_modification"
+        }
+      ],
+      "comments/commentThread/context": [
+        {
+          "command": "antigravity.addDraft",
+          "group": "inline"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "antigravity.submitDrafts",
+          "when": "view == antigravity.draftsView",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "antigravity.deleteDraft",
+          "when": "view == antigravity.draftsView",
+          "group": "inline"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/node": "16.x",
+    "@types/vscode": "^1.80.0",
+    "@typescript-eslint/eslint-plugin": "^6.7.0",
+    "@typescript-eslint/parser": "^6.7.0",
+    "@vscode/vsce": "^3.9.1",
+    "eslint": "^8.49.0",
+    "prettier": "^3.0.3",
+    "typescript": "^5.2.2"
+  }
+}
