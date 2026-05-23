@@ -44,6 +44,7 @@ class DraftsTreeDataProvider {
     drafts = [];
     refresh() {
         this._onDidChangeTreeData.fire();
+        vscode.commands.executeCommand('setContext', 'antigravity.hasDrafts', this.drafts.length > 0);
     }
     getTreeItem(element) {
         return element;

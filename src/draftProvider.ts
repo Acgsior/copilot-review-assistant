@@ -41,6 +41,7 @@ export class DraftsTreeDataProvider implements vscode.TreeDataProvider<DraftItem
 
     refresh(): void {
         this._onDidChangeTreeData.fire();
+        vscode.commands.executeCommand('setContext', 'antigravity.hasDrafts', this.drafts.length > 0);
     }
 
     getTreeItem(element: DraftItem): vscode.TreeItem {
