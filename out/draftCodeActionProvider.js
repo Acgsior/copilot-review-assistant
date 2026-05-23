@@ -9,7 +9,7 @@ class DraftCodeActionProvider {
         }
         const action = new vscode.CodeAction('Add Comment to Copilot', vscode.CodeActionKind.Refactor);
         action.command = {
-            command: 'antigravity.createReviewThread',
+            command: 'copilotReview.createReviewThread',
             title: 'Add Comment to Copilot'
         };
         return [action];

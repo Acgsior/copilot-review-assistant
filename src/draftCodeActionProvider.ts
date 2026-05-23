@@ -8,7 +8,7 @@ export class DraftCodeActionProvider implements vscode.CodeActionProvider {
 
         const action = new vscode.CodeAction('Add Comment to Copilot', vscode.CodeActionKind.Refactor);
         action.command = {
-            command: 'antigravity.createReviewThread',
+            command: 'copilotReview.createReviewThread',
             title: 'Add Comment to Copilot'
         };
         return [action];

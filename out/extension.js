@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.activate = activate;
 exports.deactivate = deactivate;
 const vscode = require("vscode");
-const draftProvider_1 = require("./draftProvider");
+const draftWebviewProvider_1 = require("./draftWebviewProvider");
 const draftCodeActionProvider_1 = require("./draftCodeActionProvider");
 let commentId = 1;
 class PlanReviewComment {
@@ -28,14 +28,14 @@ class PlanReviewComment {
     }
 }
 function activate(context) {
-    const draftsProvider = new draftProvider_1.DraftsTreeDataProvider();
-    vscode.window.registerTreeDataProvider('antigravity.draftsView', draftsProvider);
-    const commentController = vscode.comments.createCommentController('antigravity-review', 'Antigravity Plan Review');
+    const draftsProvider = new draftWebviewProvider_1.DraftsWebviewProvider(context.extensionUri);
+    context.subscriptions.push(vscode.window.registerWebviewViewProvider('copilotReview.draftsView', draftsProvider));
+    const commentController = vscode.comments.createCommentController('copilot-review', 'Copilot Review Assistant');
     context.subscriptions.push(commentController);
     context.subscriptions.push(vscode.languages.registerCodeActionsProvider('*', new draftCodeActionProvider_1.DraftCodeActionProvider(), {
         providedCodeActionKinds: [vscode.CodeActionKind.Refactor]
     }));
-    const createReviewThreadCmd = vscode.commands.registerCommand('antigravity.createReviewThread', () => {
+    const createReviewThreadCmd = vscode.commands.registerCommand('copilotReview.createReviewThread', () => {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
             vscode.window.showErrorMessage('No active editor found.');
@@ -51,7 +51,7 @@ function activate(context) {
         thread.collapsibleState = vscode.CommentThreadCollapsibleState.Expanded;
         thread.label = 'Draft Comment';
     });
-    const addDraftCmd = vscode.commands.registerCommand('antigravity.addDraft', async (reply) => {
+    const addDraftCmd = vscode.commands.registerCommand('copilotReview.addDraft', async (reply) => {
         const userSuggestion = reply.text;
         const thread = reply.thread;
         const range = thread.range;
@@ -71,21 +71,29 @@ function activate(context) {
             const newComment = new PlanReviewComment(userSuggestion, vscode.CommentMode.Preview, { name: '📝 [DRAFT]' }, thread, 'draft', draftId);
             thread.comments = [...thread.comments, newComment];
             thread.canReply = false;
-            const draftItem = new draftProvider_1.DraftItem(draftId, userSuggestion, uri, range, document.languageId, text, thread);
+            const draftItem = {
+                id: draftId,
+                text: userSuggestion,
+                uri: uri,
+                range: range,
+                documentLanguage: document.languageId,
+                documentText: text,
+                thread: thread
+            };
             draftsProvider.addDraft(draftItem);
         }
         catch (error) {
             vscode.window.showErrorMessage(`Failed to add draft: ${error}`);
         }
     });
-    const submitDraftsCmd = vscode.commands.registerCommand('antigravity.submitDrafts', async () => {
+    const submitDraftsCmd = vscode.commands.registerCommand('copilotReview.submitDrafts', async () => {
         const drafts = draftsProvider.getAllDrafts();
         if (drafts.length === 0) {
             vscode.window.showInformationMessage('No drafts to submit.');
             return;
         }
         const panel = vscode.window.createWebviewPanel('submitPlanReview', 'Submit Plan Review', vscode.ViewColumn.One, { enableScripts: true });
-        panel.webview.html = getWebviewContent();
+        panel.webview.html = getWebviewContent(drafts);
         panel.webview.onDidReceiveMessage(async (message) => {
             if (message.command === 'submit') {
                 const summary = message.text;
@@ -111,15 +119,36 @@ function activate(context) {
             }
         }, undefined, context.subscriptions);
     });
-    const deleteDraftCmd = vscode.commands.registerCommand('antigravity.deleteDraft', (draftItem) => {
-        if (draftItem && draftItem.id) {
-            draftsProvider.removeDraft(draftItem.id);
+    const deleteDraftCmd = vscode.commands.registerCommand('copilotReview.deleteDraft', (draftId) => {
+        if (draftId) {
+            draftsProvider.removeDraft(draftId);
+        }
+        else {
+            // fallback if called with context from treeview
+            const id = arguments[0]?.id;
+            if (id) {
+                draftsProvider.removeDraft(id);
+            }
         }
     });
     context.subscriptions.push(createReviewThreadCmd, addDraftCmd, submitDraftsCmd, deleteDraftCmd);
 }
 function deactivate() { }
-function getWebviewContent() {
+function getWebviewContent(drafts) {
+    const escapeHtml = (unsafe) => unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    const draftsHtml = drafts.map(draft => {
+        const filePath = vscode.workspace.asRelativePath(draft.uri);
+        const line = draft.range.start.line + 1;
+        return `<div class="draft-card">
+            <div class="draft-header">${escapeHtml(filePath)}:${line}</div>
+            <div class="draft-body">${escapeHtml(draft.text)}</div>
+        </div>`;
+    }).join('');
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -127,48 +156,104 @@ function getWebviewContent() {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Submit Plan Review</title>
     <style>
+        :root {
+            --primary-color: #8e44ad;
+            --primary-hover: #9b59b6;
+            --bg-color: var(--vscode-editor-background);
+            --text-color: var(--vscode-editor-foreground);
+            --card-bg: var(--vscode-editorWidget-background);
+            --border-color: var(--vscode-widget-border, #444);
+        }
         body {
             font-family: var(--vscode-font-family);
-            padding: 20px;
-            color: var(--vscode-editor-foreground);
-            background-color: var(--vscode-editor-background);
+            padding: 30px;
+            color: var(--text-color);
+            background-color: var(--bg-color);
             display: flex;
             flex-direction: column;
             height: 100vh;
             box-sizing: border-box;
+            max-width: 800px;
+            margin: 0 auto;
         }
         h2 {
             margin-top: 0;
             font-weight: 500;
+            color: var(--primary-color);
+        }
+        p {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 20px;
         }
         textarea {
-            flex: 1;
             width: 100%;
+            height: 120px;
             margin-bottom: 20px;
             background-color: var(--vscode-input-background);
             color: var(--vscode-input-foreground);
             border: 1px solid var(--vscode-input-border);
-            padding: 10px;
+            border-radius: 6px;
+            padding: 12px;
             font-family: var(--vscode-editor-font-family);
             font-size: var(--vscode-editor-font-size);
-            resize: none;
+            resize: vertical;
             box-sizing: border-box;
+            transition: border-color 0.3s;
         }
         textarea:focus {
-            outline: 1px solid var(--vscode-focusBorder);
-            border-color: var(--vscode-focusBorder);
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(142, 68, 173, 0.2);
+        }
+        .drafts-container {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            background: var(--vscode-editor-inactiveSelectionBackground);
+        }
+        .draft-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+        .draft-card:last-child {
+            margin-bottom: 0;
+        }
+        .draft-header {
+            font-size: 12px;
+            color: var(--primary-color);
+            margin-bottom: 6px;
+            font-weight: bold;
+        }
+        .draft-body {
+            font-size: 13px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
         }
         button {
-            padding: 10px 20px;
-            background-color: var(--vscode-button-background);
-            color: var(--vscode-button-foreground);
+            padding: 12px 24px;
+            background-color: var(--primary-color);
+            color: #fff;
             border: none;
+            border-radius: 6px;
             cursor: pointer;
             font-size: 14px;
+            font-weight: 500;
             align-self: flex-start;
+            transition: background-color 0.2s, transform 0.1s;
         }
         button:hover {
-            background-color: var(--vscode-button-hoverBackground);
+            background-color: var(--primary-hover);
+        }
+        button:active {
+            transform: scale(0.98);
         }
     </style>
 </head>
@@ -176,6 +261,12 @@ function getWebviewContent() {
     <h2>Add a Summary Comment</h2>
     <p>This markdown text will be prepended to your drafted code reviews before sending to Copilot Chat.</p>
     <textarea id="summaryText" placeholder="Write your summary here..."></textarea>
+    
+    <h3>Draft Comments to Submit</h3>
+    <div class="drafts-container">
+        ${draftsHtml}
+    </div>
+
     <button id="submitBtn">Submit to Copilot Chat</button>
 
     <script>

@@ -1,6 +1,13 @@
 # Change Log
 
-All notable changes to the "antigravity-plan-review" extension will be documented in this file.
+All notable changes to the "copilot-review-assistant" extension will be documented in this file.
+
+## [0.0.5] - 2026-05-24
+### Added
+- Renamed project to Copilot Review Assistant.
+- Migrated Drafts List from TreeView to Webview to support multi-line comment display with word wrapping.
+- Updated the "Submit Plan Review" Webview with a modern, flat UI design matching the extension's branding.
+- Generated a new app icon.
 
 ## [0.0.4] - 2026-05-24
 ### Added
@@ -19,7 +26,7 @@ All notable changes to the "antigravity-plan-review" extension will be documente
 ## [0.0.1] - 2026-05-23
 ### Added
 - Initial release.
-- Added `Start AI Plan Review` command to the editor context menu.
+- Added `Add Comment to Copilot` command to the editor context menu.
 - Added native inline Comment API support for reviewing code.
 - Added `Submit to Copilot Chat` action to automatically forward context, code snippets, and review suggestions to GitHub Copilot Chat.
 - Implemented text truncation (max 500 lines) to prevent Copilot prompt limits.

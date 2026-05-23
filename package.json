@@ -1,9 +1,11 @@
 {
-  "name": "antigravity-plan-review",
-  "displayName": "Antigravity Plan Review",
+  "name": "copilot-review-assistant",
+  "displayName": "Copilot Review Assistant",
   "description": "Send code snippets and review plans to Copilot Chat seamlessly via inline comments.",
   "publisher": "morganqin",
-  "version": "0.0.4",
+  "author": "Morgan Qin",
+  "version": "0.0.5",
+  "icon": "icon.png",
   "engines": {
     "vscode": "^1.80.0"
   },
@@ -15,22 +17,22 @@
   "contributes": {
     "commands": [
       {
-        "command": "antigravity.createReviewThread",
-        "title": "Start AI Plan Review",
+        "command": "copilotReview.createReviewThread",
+        "title": "Add Comment to Copilot",
         "icon": "$(comment-add)"
       },
       {
-        "command": "antigravity.addDraft",
+        "command": "copilotReview.addDraft",
         "title": "Add to Draft",
         "icon": "$(save)"
       },
       {
-        "command": "antigravity.submitDrafts",
+        "command": "copilotReview.submitDrafts",
         "title": "Submit Drafts to Copilot",
         "icon": "$(sparkle)"
       },
       {
-        "command": "antigravity.deleteDraft",
+        "command": "copilotReview.deleteDraft",
         "title": "Delete Draft",
         "icon": "$(trash)"
       }
@@ -38,17 +40,18 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "antigravity-review",
+          "id": "copilot-review",
           "title": "Plan Review",
           "icon": "$(comment-discussion)"
         }
       ]
     },
     "views": {
-      "antigravity-review": [
+      "copilot-review": [
         {
-          "id": "antigravity.draftsView",
+          "id": "copilotReview.draftsView",
           "name": "Drafts",
+          "type": "webview",
           "contextualTitle": "Plan Review Drafts"
         }
       ]
@@ -57,34 +60,34 @@
       "editor/context": [
         {
           "when": "editorHasSelection",
-          "command": "antigravity.createReviewThread",
+          "command": "copilotReview.createReviewThread",
           "group": "1_modification"
         }
       ],
       "comments/commentThread/context": [
         {
-          "command": "antigravity.addDraft",
+          "command": "copilotReview.addDraft",
           "group": "inline"
         }
       ],
       "view/title": [
         {
-          "command": "antigravity.submitDrafts",
-          "when": "view == antigravity.draftsView",
+          "command": "copilotReview.submitDrafts",
+          "when": "view == copilotReview.draftsView",
           "group": "navigation"
         }
       ],
       "editor/title": [
         {
-          "command": "antigravity.submitDrafts",
-          "when": "antigravity.hasDrafts",
+          "command": "copilotReview.submitDrafts",
+          "when": "copilotReview.hasDrafts",
           "group": "navigation"
         }
       ],
       "view/item/context": [
         {
-          "command": "antigravity.deleteDraft",
-          "when": "view == antigravity.draftsView",
+          "command": "copilotReview.deleteDraft",
+          "when": "view == copilotReview.draftsView",
           "group": "inline"
         }
       ]
