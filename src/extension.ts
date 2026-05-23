@@ -83,13 +83,14 @@ export function activate(context: vscode.ExtensionContext) {
             const newComment = new PlanReviewComment(
                 userSuggestion,
                 vscode.CommentMode.Preview,
-                { name: `📝 [DRAFT #${sequence}]` },
+                { name: ' ' },
                 thread,
                 'draft',
                 draftId
             );
             
             thread.comments = [...thread.comments, newComment];
+            thread.label = `DRAFT Comment #${sequence}`;
             thread.canReply = false;
 
             const draftItem: DraftItem = {
@@ -194,7 +195,7 @@ export function activate(context: vscode.ExtensionContext) {
     const saveDraftEditCmd = vscode.commands.registerCommand('copilotReview.saveDraftEdit', (comment: PlanReviewComment, text: string) => {
         if (!comment.parent) return;
 
-        comment.body = text;
+        comment.body = typeof text === 'string' ? new vscode.MarkdownString(text) : text;
         comment.savedBody = text;
         comment.mode = vscode.CommentMode.Preview;
         comment.contextValue = 'draft';

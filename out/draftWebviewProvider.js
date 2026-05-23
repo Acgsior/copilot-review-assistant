@@ -15,7 +15,7 @@ class DraftsWebviewProvider {
             enableScripts: true,
             localResourceRoots: [this._extensionUri]
         };
-        webviewView.webview.html = this._getHtmlForWebview(webviewView.webview, this.drafts);
+        webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
         webviewView.webview.onDidReceiveMessage(data => {
             switch (data.type) {
                 case 'deleteDraft':
@@ -41,6 +41,9 @@ class DraftsWebviewProvider {
                             }
                         });
                     }
+                    break;
+                case 'webviewLoaded':
+                    this.updateWebview();
                     break;
             }
         });
@@ -85,14 +88,7 @@ class DraftsWebviewProvider {
                 })) });
         }
     }
-    _getHtmlForWebview(_webview, drafts) {
-        const initialDraftsJson = JSON.stringify(drafts.map(d => ({
-            id: d.id,
-            text: d.text,
-            filePath: vscode.workspace.asRelativePath(d.uri),
-            line: d.range.start.line + 1,
-            sequence: d.sequence
-        })));
+    _getHtmlForWebview(_webview) {
         return `<!DOCTYPE html>
             <html lang="en">
             <head>
@@ -175,7 +171,6 @@ class DraftsWebviewProvider {
                 <script>
                     const vscode = acquireVsCodeApi();
                     const container = document.getElementById('drafts-container');
-                    const initialDrafts = ${initialDraftsJson};
 
                     window.addEventListener('message', event => {
                         const message = event.data;
@@ -186,8 +181,8 @@ class DraftsWebviewProvider {
                         }
                     });
 
-                    // Initial render
-                    renderDrafts(initialDrafts);
+                    // Request initial data
+                    vscode.postMessage({ type: 'webviewLoaded' });
 
                     function renderDrafts(drafts) {
                         if (drafts.length === 0) {

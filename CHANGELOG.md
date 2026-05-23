@@ -2,6 +2,18 @@
 
 All notable changes to the "copilot-review-assistant" extension will be documented in this file.
 
+## [0.0.8] - 2026-05-24
+### Added
+- Add to Draft button is now styled as the primary button (ordered first), and Cancel as secondary.
+- Added Cancel (X) icon to the top right of the new Draft Comment interface.
+### Changed
+- Removed "📝 [DRAFT #x]" from the comment author name.
+- Changed the inline thread title to "DRAFT Comment #x".
+- Renamed the sidebar view title to "DRAFT".
+### Fixed
+- Fixed an issue where the edited comment content would not display correctly in the editor after saving.
+- Fixed a bug where the DRAFT sidebar view would lose synchronization with the editor and fail to display items upon reloading.
+
 ## [0.0.7] - 2026-05-24
 ### Added
 - Added a Cancel button to the left of the "Add to Draft" button in the inline comment thread.

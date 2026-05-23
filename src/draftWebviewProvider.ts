@@ -29,7 +29,7 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
             localResourceRoots: [this._extensionUri]
         };
 
-        webviewView.webview.html = this._getHtmlForWebview(webviewView.webview, this.drafts);
+        webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
 
         webviewView.webview.onDidReceiveMessage(data => {
             switch (data.type) {
@@ -56,6 +56,9 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
                             }
                         });
                     }
+                    break;
+                case 'webviewLoaded':
+                    this.updateWebview();
                     break;
             }
         });
@@ -108,15 +111,7 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
         }
     }
 
-    private _getHtmlForWebview(_webview: vscode.Webview, drafts: DraftItem[]) {
-        const initialDraftsJson = JSON.stringify(drafts.map(d => ({
-            id: d.id,
-            text: d.text,
-            filePath: vscode.workspace.asRelativePath(d.uri),
-            line: d.range.start.line + 1,
-            sequence: d.sequence
-        })));
-
+    private _getHtmlForWebview(_webview: vscode.Webview) {
         return `<!DOCTYPE html>
             <html lang="en">
             <head>
@@ -199,7 +194,6 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
                 <script>
                     const vscode = acquireVsCodeApi();
                     const container = document.getElementById('drafts-container');
-                    const initialDrafts = ${initialDraftsJson};
 
                     window.addEventListener('message', event => {
                         const message = event.data;
@@ -210,8 +204,8 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
                         }
                     });
 
-                    // Initial render
-                    renderDrafts(initialDrafts);
+                    // Request initial data
+                    vscode.postMessage({ type: 'webviewLoaded' });
 
                     function renderDrafts(drafts) {
                         if (drafts.length === 0) {

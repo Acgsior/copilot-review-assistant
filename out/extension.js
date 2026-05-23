@@ -70,8 +70,9 @@ function activate(context) {
             }
             const sequence = draftCounter++;
             const draftId = `draft-${Date.now()}`;
-            const newComment = new PlanReviewComment(userSuggestion, vscode.CommentMode.Preview, { name: `📝 [DRAFT #${sequence}]` }, thread, 'draft', draftId);
+            const newComment = new PlanReviewComment(userSuggestion, vscode.CommentMode.Preview, { name: ' ' }, thread, 'draft', draftId);
             thread.comments = [...thread.comments, newComment];
+            thread.label = `DRAFT Comment #${sequence}`;
             thread.canReply = false;
             const draftItem = {
                 id: draftId,
@@ -154,7 +155,7 @@ function activate(context) {
     const saveDraftEditCmd = vscode.commands.registerCommand('copilotReview.saveDraftEdit', (comment, text) => {
         if (!comment.parent)
             return;
-        comment.body = text;
+        comment.body = typeof text === 'string' ? new vscode.MarkdownString(text) : text;
         comment.savedBody = text;
         comment.mode = vscode.CommentMode.Preview;
         comment.contextValue = 'draft';
