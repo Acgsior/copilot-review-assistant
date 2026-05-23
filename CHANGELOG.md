@@ -2,6 +2,14 @@
 
 All notable changes to the "copilot-review-assistant" extension will be documented in this file.
 
+## [0.0.6] - 2026-05-24
+### Added
+- Unified the delete button icons using VS Code native-like inline SVGs in both Webviews.
+- Added a re-edit feature for inline Draft Comments (allows toggling back to edit mode and saving the updated comment).
+- Added a Cancel button to the Submit Plan Review view to safely discard or close the dialog.
+- Improved focus management: automatically focuses the input text area when submitting, and attempts to autofocus comments upon thread creation.
+- Added sequential numbering (e.g., `#1`) to Draft Comments globally for better differentiation, resetting back to `#1` after a successful submission.
+
 ## [0.0.5] - 2026-05-24
 ### Added
 - Renamed project to Copilot Review Assistant.

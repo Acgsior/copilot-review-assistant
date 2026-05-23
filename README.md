@@ -8,9 +8,10 @@ Copilot Review Assistant is a VS Code extension designed to improve the code rev
 - **Context Aware:** Automatically captures file path, line numbers, and the selected source code.
 - **One-Click Copilot Integration:** Push your suggestions and context to Copilot Chat with a single click.
 - **Code Actions:** Select code and use the lightbulb menu to quickly "Add Comment to Copilot".
-- **Drafts Panel:** View and manage all your drafted comments in a dedicated sidebar Webview with multi-line support.
-- **Smart Submit Button:** A dynamic submit button appears in your editor's title bar only when you have active drafts.
-- **Batch Submission:** Combine multiple drafts into a structured list and send them to Copilot Chat together.
+- **Drafts Panel:** View and manage all your drafted comments in a dedicated sidebar Webview with multi-line support and unified UI styling.
+- **Re-editable Drafts:** Toggle inline Draft Comments back into edit mode and save modifications instantly.
+- **Batch Submission with Autofocus:** Combine multiple drafts into a structured list, write a summary using an autofocusing textarea, and cancel at any time.
+- **Sequential Draft Numbering:** Track drafts with sequential numbering (e.g. `#1`, `#2`) that resets after each submission to Copilot Chat.
 
 ## Usage
 

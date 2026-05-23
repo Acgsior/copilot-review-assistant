@@ -4,7 +4,7 @@
   "description": "Send code snippets and review plans to Copilot Chat seamlessly via inline comments.",
   "publisher": "morganqin",
   "author": "Morgan Qin",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "icon": "icon.png",
   "engines": {
     "vscode": "^1.80.0"
@@ -35,6 +35,16 @@
         "command": "copilotReview.deleteDraft",
         "title": "Delete Draft",
         "icon": "$(trash)"
+      },
+      {
+        "command": "copilotReview.editDraft",
+        "title": "Edit Draft",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "copilotReview.saveDraftEdit",
+        "title": "Save Draft",
+        "icon": "$(check)"
       }
     ],
     "viewsContainers": {
@@ -70,6 +80,18 @@
           "group": "inline"
         }
       ],
+      "comments/comment/title": [
+        {
+          "command": "copilotReview.editDraft",
+          "group": "inline",
+          "when": "comment == draft"
+        },
+        {
+          "command": "copilotReview.saveDraftEdit",
+          "group": "inline",
+          "when": "comment == draftEditing"
+        }
+      ],
       "view/title": [
         {
           "command": "copilotReview.submitDrafts",
@@ -99,7 +121,8 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package -o release/"
   },
   "devDependencies": {
     "@types/node": "16.x",

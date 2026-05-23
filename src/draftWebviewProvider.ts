@@ -8,6 +8,7 @@ export interface DraftItem {
     documentLanguage: string;
     documentText: string;
     thread: vscode.CommentThread;
+    sequence?: number;
 }
 
 export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
@@ -81,14 +82,15 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
         return this.drafts;
     }
 
-    private updateWebview() {
+    public updateWebview() {
         vscode.commands.executeCommand('setContext', 'copilotReview.hasDrafts', this.drafts.length > 0);
         if (this._view) {
             this._view.webview.postMessage({ type: 'updateDrafts', drafts: this.drafts.map(d => ({
                 id: d.id,
                 text: d.text,
                 filePath: vscode.workspace.asRelativePath(d.uri),
-                line: d.range.start.line + 1
+                line: d.range.start.line + 1,
+                sequence: d.sequence
             })) });
         }
     }
@@ -200,11 +202,12 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
                             
                             const fileInfo = document.createElement('span');
                             fileInfo.className = 'draft-file';
-                            fileInfo.textContent = draft.filePath + ':' + draft.line;
+                            const sequenceStr = draft.sequence ? '#' + draft.sequence + ' ' : '';
+                            fileInfo.textContent = sequenceStr + draft.filePath + ':' + draft.line;
 
                             const deleteBtn = document.createElement('button');
                             deleteBtn.className = 'delete-btn';
-                            deleteBtn.innerHTML = '🗑️';
+                            deleteBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M10 3h3v1h-1v9l-1 1H4l-1-1V4H2V3h3V2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v1zM9 2H6v1h3V2zM4 13h7V4H4v9zm2-8H5v7h1V5zm1 0h1v7H7V5zm2 0h1v7H9V5z"/></svg>';
                             deleteBtn.onclick = (e) => {
                                 e.stopPropagation();
                                 vscode.postMessage({ type: 'deleteDraft', id: draft.id });

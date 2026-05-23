@@ -3,6 +3,7 @@ import { DraftsWebviewProvider, DraftItem } from './draftWebviewProvider';
 import { DraftCodeActionProvider } from './draftCodeActionProvider';
 
 let commentId = 1;
+let draftCounter = 1;
 
 class PlanReviewComment implements vscode.Comment {
     id: number;
@@ -54,6 +55,10 @@ export function activate(context: vscode.ExtensionContext) {
         thread.canReply = true;
         thread.collapsibleState = vscode.CommentThreadCollapsibleState.Expanded;
         thread.label = 'Draft Comment';
+
+        setTimeout(() => {
+            vscode.commands.executeCommand('workbench.action.focusComment');
+        }, 100);
     });
 
     const addDraftCmd = vscode.commands.registerCommand('copilotReview.addDraft', async (reply: vscode.CommentReply) => {
@@ -76,12 +81,13 @@ export function activate(context: vscode.ExtensionContext) {
                 text = lines.slice(0, 500).join('\n') + '\n\n... (code truncated due to length)';
             }
 
+            const sequence = draftCounter++;
             const draftId = `draft-${Date.now()}`;
             
             const newComment = new PlanReviewComment(
                 userSuggestion,
                 vscode.CommentMode.Preview,
-                { name: '📝 [DRAFT]' },
+                { name: `📝 [DRAFT #${sequence}]` },
                 thread,
                 'draft',
                 draftId
@@ -97,7 +103,8 @@ export function activate(context: vscode.ExtensionContext) {
                 range: range,
                 documentLanguage: document.languageId,
                 documentText: text,
-                thread: thread
+                thread: thread,
+                sequence: sequence
             };
             
             draftsProvider.addDraft(draftItem);
@@ -146,10 +153,13 @@ export function activate(context: vscode.ExtensionContext) {
                         });
 
                         draftsProvider.clearDrafts();
+                        draftCounter = 1;
                         panel.dispose();
                     } catch (error) {
                         vscode.window.showErrorMessage(`Failed to open Copilot Chat: ${error}`);
                     }
+                } else if (message.command === 'cancel') {
+                    panel.dispose();
                 }
             },
             undefined,
@@ -169,11 +179,40 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
 
+    const editDraftCmd = vscode.commands.registerCommand('copilotReview.editDraft', (comment: PlanReviewComment) => {
+        comment.mode = vscode.CommentMode.Editing;
+        comment.contextValue = 'draftEditing';
+        if (comment.parent) {
+            comment.parent.comments = [...comment.parent.comments];
+        }
+    });
+
+    const saveDraftEditCmd = vscode.commands.registerCommand('copilotReview.saveDraftEdit', (comment: PlanReviewComment, text: string) => {
+        if (!comment.parent) return;
+
+        comment.body = text;
+        comment.savedBody = text;
+        comment.mode = vscode.CommentMode.Preview;
+        comment.contextValue = 'draft';
+        
+        // Update draftItem text
+        const drafts = draftsProvider.getAllDrafts();
+        const draft = drafts.find(d => d.id === comment.draftId);
+        if (draft) {
+            draft.text = text;
+            draftsProvider.updateWebview();
+        }
+
+        comment.parent.comments = [...comment.parent.comments];
+    });
+
     context.subscriptions.push(
         createReviewThreadCmd, 
         addDraftCmd, 
         submitDraftsCmd,
-        deleteDraftCmd
+        deleteDraftCmd,
+        editDraftCmd,
+        saveDraftEditCmd
     );
 }
 
@@ -190,8 +229,9 @@ function getWebviewContent(drafts: DraftItem[]) {
     const draftsHtml = drafts.map(draft => {
         const filePath = vscode.workspace.asRelativePath(draft.uri);
         const line = draft.range.start.line + 1;
+        const sequenceStr = draft.sequence ? `#${draft.sequence} ` : '';
         return `<div class="draft-card">
-            <div class="draft-header">${escapeHtml(filePath)}:${line}</div>
+            <div class="draft-header">${sequenceStr}${escapeHtml(filePath)}:${line}</div>
             <div class="draft-body">${escapeHtml(draft.text)}</div>
         </div>`;
     }).join('');
@@ -284,6 +324,11 @@ function getWebviewContent(drafts: DraftItem[]) {
             white-space: pre-wrap;
             word-wrap: break-word;
         }
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 10px;
+        }
         button {
             padding: 12px 24px;
             background-color: var(--primary-color);
@@ -293,7 +338,6 @@ function getWebviewContent(drafts: DraftItem[]) {
             cursor: pointer;
             font-size: 14px;
             font-weight: 500;
-            align-self: flex-start;
             transition: background-color 0.2s, transform 0.1s;
         }
         button:hover {
@@ -302,19 +346,30 @@ function getWebviewContent(drafts: DraftItem[]) {
         button:active {
             transform: scale(0.98);
         }
+        .btn-secondary {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+        .btn-secondary:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
     </style>
 </head>
 <body>
     <h2>Add a Summary Comment</h2>
     <p>This markdown text will be prepended to your drafted code reviews before sending to Copilot Chat.</p>
-    <textarea id="summaryText" placeholder="Write your summary here..."></textarea>
+    <textarea id="summaryText" placeholder="Write your summary here..." autofocus></textarea>
     
     <h3>Draft Comments to Submit</h3>
     <div class="drafts-container">
         ${draftsHtml}
     </div>
 
-    <button id="submitBtn">Submit to Copilot Chat</button>
+    <div class="button-group">
+        <button id="submitBtn">Submit to Copilot Chat</button>
+        <button id="cancelBtn" class="btn-secondary">Cancel</button>
+    </div>
 
     <script>
         const vscode = acquireVsCodeApi();
@@ -325,6 +380,10 @@ function getWebviewContent(drafts: DraftItem[]) {
                 command: 'submit',
                 text: text
             });
+        });
+
+        document.getElementById('cancelBtn').addEventListener('click', () => {
+            vscode.postMessage({ command: 'cancel' });
         });
     </script>
 </body>
