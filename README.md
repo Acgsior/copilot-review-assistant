@@ -1,27 +1,74 @@
 # Copilot Review Assistant
 
-Copilot Review Assistant is a VS Code extension designed to improve the code review and AI-assisted development experience. It leverages the native VS Code Comments API, allowing you to select any snippet in your code, trigger an inline comment box, and seamlessly send your review suggestions along with context directly to GitHub Copilot Chat.
+Copilot Review Assistant is a premium VS Code extension designed to revolutionize your code review and AI-assisted development experience. It leverages VS Code's native Comments API, allowing you to select any snippet in your code, add inline review draft comments, and seamlessly send your review suggestions along with full context to GitHub Copilot Chat.
 
-## Features
+---
 
-- **Inline Reviews:** Select code and start a review thread right inside your editor (just like GitHub PR reviews).
-- **Context Aware:** Automatically captures file path, line numbers, and the selected source code.
-- **One-Click Copilot Integration:** Push your suggestions and context to Copilot Chat with a single click.
-- **Code Actions:** Select code and use the lightbulb menu to quickly "Add Comment to Copilot".
-- **Drafts Panel:** View and manage all your drafted comments in a dedicated sidebar Webview with multi-line support and unified UI styling.
-- **Re-editable Drafts:** Toggle inline Draft Comments back into edit mode and save modifications instantly.
-- **Batch Submission with Autofocus:** Combine multiple drafts into a structured list, write a summary using an autofocusing textarea, and cancel at any time.
-- **Sequential Draft Numbering:** Track drafts with sequential numbering (e.g. `#1`, `#2`) that resets after each submission to Copilot Chat.
+## 🌟 Key Features
 
-## Usage
+- **Inline Reviews:** Select code and start a review thread right inside your editor, matching the native GitHub PR review experience.
+- **Context-Aware Snippets:** Automatically captures file paths, line ranges, and the precise source code you selected.
+- **Workspace State Persistence:** Draft comments are safely persisted across sessions on a per-workspace basis. Closing VS Code or reloading a window will never lose your unsaved reviews.
+- **Flexible View Modes (Flat / Grouped):**
+  - **Flat List View (`$(list-flat)`):** Lists drafts in chronological order.
+  - **Grouped File View (`$(list-tree)`):** Organizes draft comments by file, sorted logically by starting line number, complete with collapsible files and item count status badges.
+- **Smart Code Preview & Reference Strategies:**
+  - **Collapsible Code Preview:** Inside the submission panel, long code snippets are neatly tucked inside collapsible `<details>` blocks.
+  - **Reference Strategy (Token Saving):** If a draft contains more than a configurable number of lines (e.g. 10 lines), the extension automatically references the snippet by its file path and line numbers (e.g. `path/to/file.ts#L12~L45`) when submitting to Copilot Chat, instead of copying massive blocks of text.
+- **Customizable Templates:** Take full control of what is sent to Copilot Chat and how individual draft items are formatted using intuitive configuration templates.
+- **Seamless Keybindings:** Boost your productivity with quick keyboard shortcuts.
+- **Sequential Draft Numbering:** Track drafts with sequential numbering (e.g., `#1`, `#2`) that resets automatically after submission.
 
-1. Select the code block you want to review.
-2. Click the lightbulb icon (Code Action) and choose **Add Comment to Copilot**, or right-click the selection and choose **Add Comment to Copilot**.
-3. Type your review suggestions into the inline comment box and click **Add to Draft**.
-4. Repeat for other files as needed.
-5. Click the **Submit Drafts to Copilot** button (sparkle icon) in the top-right of your editor or in the left sidebar's Plan Review view.
-6. Copilot Chat will open with a prepared prompt containing your context and suggestions for you to review and send.
+---
 
-## Requirements
+## 🚀 Usage
 
-- **GitHub Copilot Chat** extension must be installed and active to handle the `workbench.action.chat.open` command.
+1. **Create Drafts:**
+   - Select a block of code in the editor.
+   - Right-click and choose **Add Comment to Copilot**, or use the global shortcut **`Ctrl+Shift+D`** (or **`Cmd+Shift+D`** on macOS).
+   - Alternatively, click the lightbulb icon (Code Action) and choose **Add Comment to Copilot**.
+   - Type your suggestions in the inline comment box, then click **Add to Draft** (or edit and save existing comments).
+
+2. **Manage Drafts:**
+   - Open the **Plan Review** sidebar view (`$(comment-discussion)` in the Activity Bar) to view your draft comments.
+   - Toggle between **Flat View** and **Grouped View** using the navigation icons in the sidebar header.
+   - Click the edit icon to jump directly to a draft comment in the editor, or delete drafts using the trash icon.
+
+3. **Submit to Copilot Chat:**
+   - Click the **Submit Drafts to Copilot** button (sparkle icon) in the editor title bar or the sidebar panel, or press **`Ctrl+Shift+Enter`** (or **`Cmd+Shift+Enter`** on macOS).
+   - A beautiful review dashboard will open. Enter a summary of your plan or code changes, preview your drafts, and hit **Submit to Copilot Chat**.
+   - Copilot Chat will automatically focus with the perfectly structured review prompt containing your summary, context, and review comments.
+
+---
+
+## ⚙️ Configuration Settings
+
+Customize the extension behavior using the following settings in your VS Code `settings.json`:
+
+| Setting Key | Default Value | Description |
+| :--- | :--- | :--- |
+| `copilotReview.promptTemplate` | `"${summary}\n\n---\n\nComplete changes:\n\n${drafts}"` | The template for the prompt sent to Copilot Chat. Supports `${summary}` and `${drafts}` variables. |
+| `copilotReview.draftTemplate` | `"- \`${filePath}\` (Lines ${startLine}-${endLine})\n  ${codeBlock}\n  ${comment}\n\n"` | The template formatting each draft item in the prompt. Supports `${filePath}`, `${startLine}`, `${endLine}`, `${language}`, `${code}`, `${codeBlock}`, and `${comment}` variables. |
+| `copilotReview.codePreviewMaxLines` | `20` | Maximum number of lines of source code to show in the review submission preview dashboard (range: `0-20`). Snippets longer than this are truncated. |
+| `copilotReview.inlineCodeThreshold` | `10` | The threshold (in lines) above which code snippets are referenced by path and line number range (e.g. `file.ts#L10~L35`) instead of being fully inlined into the Copilot prompt. |
+
+---
+
+## ⌨️ Keybindings
+
+Accelerate your workflow with these keyboard shortcuts:
+
+* **Create Review Comment:**
+  * Windows/Linux: `Ctrl+Shift+D`
+  * macOS: `Cmd+Shift+D`
+  * *Condition:* Active selection in editor.
+* **Submit Plan Review:**
+  * Windows/Linux: `Ctrl+Shift+Enter`
+  * macOS: `Cmd+Shift+Enter`
+  * *Condition:* Unsubmitted drafts exist in the workspace.
+
+---
+
+## 🛠️ Requirements
+
+- **GitHub Copilot Chat** extension must be installed and active to receive and process the generated review prompts.

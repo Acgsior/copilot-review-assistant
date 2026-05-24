@@ -2,6 +2,26 @@
 
 All notable changes to the "copilot-review-assistant" extension will be documented in this file.
 
+## [0.0.9] - 2026-05-24
+### Added
+- **Architectural Refactoring**: Fully modularized the codebase into sub-components (`commands/`, `models/`, `state/`, `providers/`, `webviews/`), significantly improving code readability and maintainability. Cleaned up `extension.ts` down to ~40 lines.
+- **State Persistence**: Introduced a robust `DraftStore` that leverages VS Code's native `workspaceState` to isolate drafts per workspace/folder and persist review states across VS Code restarts.
+- **Advanced Customization Options**: Added user settings:
+  - `copilotReview.promptTemplate` to configure custom templates sent to Copilot Chat with `${summary}` and `${drafts}` variables.
+  - `copilotReview.draftTemplate` to format individual drafts with variables like `${filePath}`, `${startLine}`, `${endLine}`, `${language}`, `${code}`, and `${comment}`.
+  - `copilotReview.codePreviewMaxLines` to limit the maximum lines of code (0-20) shown in the Submit review preview webview.
+  - `copilotReview.inlineCodeThreshold` to reference large code snippets by file path and line numbers (e.g. `file.ts#L10~L35`) instead of fully inlining them when submitting reviews longer than the threshold.
+- **View Mode Toggle (Flat / Grouped)**: Added view switching capability to the Plan Review sidebar. Users can toggle between Flat (chronological list) and Grouped (grouped by file name, ordered by line ranges, with status badges indicating the draft count) views.
+- **Submit Panel Preview Upgrades**: Upgraded the Submit Plan Review webview with collapsible details (`<details>`) showing beautiful previews of each draft comment.
+- **Global Keybindings**: Added global keyboard shortcuts for faster workflows:
+  - `Ctrl+Shift+D` / `Cmd+Shift+D` to trigger "Add Comment to Copilot" on selection.
+  - `Ctrl+Shift+Enter` / `Cmd+Shift+Enter` to quickly open the Submit review panel.
+- **Robust Automated Testing**: Added a comprehensive Mocha-based integration testing suite checking `DraftStore` state, serialization, line thresholds, and template interpolation.
+
+### Fixed
+- Fixed an issue where prompt assembly incorrectly handled newline sequences.
+- Fixed a bug where edited comment contents were not correctly saved/synchronized due to comment node value resolution.
+
 ## [0.0.8] - 2026-05-24
 ### Added
 - Add to Draft button is now styled as the primary button (ordered first), and Cancel as secondary.

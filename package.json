@@ -4,7 +4,7 @@
   "description": "Send code snippets and review plans to Copilot Chat seamlessly via inline comments.",
   "publisher": "morganqin",
   "author": "Morgan Qin",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "icon": "icon.png",
   "engines": {
     "vscode": "^1.80.0"
@@ -50,6 +50,16 @@
         "command": "copilotReview.saveDraftEdit",
         "title": "Save Draft",
         "icon": "$(check)"
+      },
+      {
+        "command": "copilotReview.toggleViewGrouped",
+        "title": "View as Tree",
+        "icon": "$(list-tree)"
+      },
+      {
+        "command": "copilotReview.toggleViewFlat",
+        "title": "View as List",
+        "icon": "$(list-flat)"
       }
     ],
     "viewsContainers": {
@@ -116,7 +126,17 @@
         {
           "command": "copilotReview.submitDrafts",
           "when": "view == copilotReview.draftsView",
-          "group": "navigation"
+          "group": "navigation@1"
+        },
+        {
+          "command": "copilotReview.toggleViewGrouped",
+          "when": "view == copilotReview.draftsView && !copilotReview.viewGrouped",
+          "group": "navigation@2"
+        },
+        {
+          "command": "copilotReview.toggleViewFlat",
+          "when": "view == copilotReview.draftsView && copilotReview.viewGrouped",
+          "group": "navigation@2"
         }
       ],
       "editor/title": [
@@ -133,7 +153,50 @@
           "group": "inline"
         }
       ]
-    }
+    },
+    "configuration": {
+      "title": "Copilot Review Assistant",
+      "properties": {
+        "copilotReview.promptTemplate": {
+          "type": "string",
+          "default": "${summary}\n\n---\n\nComplete changes:\n\n${drafts}",
+          "markdownDescription": "Template for the prompt sent to Copilot Chat. Available variables: `${summary}`, `${drafts}`"
+        },
+        "copilotReview.draftTemplate": {
+          "type": "string",
+          "default": "- `${filePath}` (Lines ${startLine}-${endLine})\n  ${codeBlock}\n  ${comment}\n\n",
+          "markdownDescription": "Template for each draft item. Variables: `${filePath}`, `${startLine}`, `${endLine}`, `${language}`, `${code}`, `${codeBlock}`, `${comment}`"
+        },
+        "copilotReview.codePreviewMaxLines": {
+          "type": "number",
+          "default": 20,
+          "minimum": 0,
+          "maximum": 20,
+          "markdownDescription": "Max lines of code to show in the submit preview panel (0-20). Snippets longer than this are truncated with an ellipsis."
+        },
+        "copilotReview.inlineCodeThreshold": {
+          "type": "number",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 100,
+          "markdownDescription": "When submitting to Copilot Chat, code snippets with more lines than this threshold will be referenced by file path and line numbers (e.g. `file.ts#L10~L35`) instead of being inlined."
+        }
+      }
+    },
+    "keybindings": [
+      {
+        "command": "copilotReview.createReviewThread",
+        "key": "ctrl+shift+d",
+        "mac": "cmd+shift+d",
+        "when": "editorHasSelection"
+      },
+      {
+        "command": "copilotReview.submitDrafts",
+        "key": "ctrl+shift+enter",
+        "mac": "cmd+shift+enter",
+        "when": "copilotReview.hasDrafts"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
@@ -145,12 +208,15 @@
     "package": "vsce package -o release/"
   },
   "devDependencies": {
+    "@types/mocha": "^10.0.3",
     "@types/node": "16.x",
     "@types/vscode": "^1.80.0",
     "@typescript-eslint/eslint-plugin": "^6.7.0",
     "@typescript-eslint/parser": "^6.7.0",
+    "@vscode/test-electron": "^2.3.8",
     "@vscode/vsce": "^3.9.1",
     "eslint": "^8.49.0",
+    "mocha": "^10.2.0",
     "prettier": "^3.0.3",
     "typescript": "^5.2.2"
   }
