@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { PlanReviewComment } from '../models/planReviewComment';
 
 /**
  * Creates a new inline comment thread on the current editor selection.
@@ -17,7 +18,19 @@ export function createReviewThread(commentController: vscode.CommentController):
     }
 
     const thread = commentController.createCommentThread(editor.document.uri, selection, []);
-    thread.canReply = true;
+    thread.canReply = false;
+    thread.contextValue = 'adding';
     thread.collapsibleState = vscode.CommentThreadCollapsibleState.Expanded;
     thread.label = 'Draft Comment';
+
+    const tempComment = new PlanReviewComment(
+        '',
+        vscode.CommentMode.Editing,
+        { name: '' },
+        thread,
+        'adding',
+        `temp-${Date.now()}`
+    );
+
+    thread.comments = [tempComment];
 }

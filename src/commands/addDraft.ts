@@ -7,9 +7,12 @@ import { DraftStore } from '../state/draftStore';
  * Adds the user's comment as a draft review, capturing the selected code context.
  * Truncates code snippets exceeding 500 lines to avoid Copilot prompt limits.
  */
-export async function addDraft(reply: vscode.CommentReply, store: DraftStore): Promise<void> {
-    const userSuggestion = reply.text;
-    const thread = reply.thread;
+export async function addDraft(comment: PlanReviewComment, store: DraftStore): Promise<void> {
+    const userSuggestion = typeof comment.body === 'string' ? comment.body : comment.body.value;
+    const thread = comment.parent;
+    if (!thread) {
+        return;
+    }
     const range = thread.range;
     const uri = thread.uri;
 
@@ -27,20 +30,16 @@ export async function addDraft(reply: vscode.CommentReply, store: DraftStore): P
             text = lines.slice(0, 500).join('\n') + '\n\n... (code truncated due to length)';
         }
 
-        const sequence = store.nextSequence();
-        const draftId = `draft-${Date.now()}`;
+        const draftId = comment.draftId || `draft-${Date.now()}`;
 
-        const newComment = new PlanReviewComment(
-            userSuggestion,
-            vscode.CommentMode.Preview,
-            { name: ' ' },
-            thread,
-            'draft',
-            draftId
-        );
+        comment.savedBody = comment.body;
+        comment.mode = vscode.CommentMode.Preview;
+        comment.contextValue = 'draft';
+        comment.draftId = draftId;
 
-        thread.comments = [...thread.comments, newComment];
-        thread.label = `DRAFT Comment #${sequence}`;
+        thread.comments = [comment];
+        thread.contextValue = 'draft';
+        thread.label = `$(comment-discussion) Draft Comment`;
         thread.canReply = false;
 
         const draftItem: DraftItem = {
@@ -50,8 +49,7 @@ export async function addDraft(reply: vscode.CommentReply, store: DraftStore): P
             range: range,
             documentLanguage: document.languageId,
             documentText: text,
-            thread: thread,
-            sequence: sequence
+            thread: thread
         };
 
         store.addDraft(draftItem);

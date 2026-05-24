@@ -6,8 +6,19 @@ import { DraftStore } from '../state/draftStore';
  * Cancels/closes an inline comment thread.
  * If the thread contains draft comments, they are also removed from the store.
  */
-export function cancelDraft(arg: vscode.CommentReply | vscode.CommentThread, store: DraftStore): void {
-    const thread = (arg as vscode.CommentReply).thread || arg as vscode.CommentThread;
+export function cancelDraft(arg: unknown, store: DraftStore): void {
+    let thread: vscode.CommentThread | undefined;
+
+    if (arg && typeof arg === 'object') {
+        if ('comments' in arg) {
+            thread = arg as vscode.CommentThread;
+        } else if ('parent' in arg) {
+            thread = (arg as PlanReviewComment).parent;
+        } else if ('thread' in arg) {
+            thread = (arg as vscode.CommentReply).thread;
+        }
+    }
+
     if (!thread) {
         return;
     }

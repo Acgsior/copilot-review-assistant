@@ -23,11 +23,11 @@ export function registerCommands(
             createReviewThread(commentController);
         }),
 
-        vscode.commands.registerCommand('copilotReview.addDraft', (reply: vscode.CommentReply) => {
-            addDraft(reply, store);
+        vscode.commands.registerCommand('copilotReview.addDraft', (comment: PlanReviewComment) => {
+            addDraft(comment, store);
         }),
 
-        vscode.commands.registerCommand('copilotReview.cancelDraft', (arg: vscode.CommentReply | vscode.CommentThread) => {
+        vscode.commands.registerCommand('copilotReview.cancelDraft', (arg: unknown) => {
             cancelDraft(arg, store);
         }),
 
@@ -39,8 +39,8 @@ export function registerCommands(
             deleteDraft(arg, store);
         }),
 
-        vscode.commands.registerCommand('copilotReview.editDraft', (comment: PlanReviewComment) => {
-            editDraft(comment);
+        vscode.commands.registerCommand('copilotReview.editDraft', (arg: unknown) => {
+            editDraft(arg);
         }),
 
         vscode.commands.registerCommand('copilotReview.saveDraftEdit', (comment: PlanReviewComment) => {

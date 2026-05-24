@@ -3,7 +3,6 @@ import { DraftItem, SerializedDraftItem } from '../models/draftItem';
 import { PlanReviewComment } from '../models/planReviewComment';
 
 const STORAGE_KEY_DRAFTS = 'copilotReview.drafts';
-const STORAGE_KEY_COUNTER = 'copilotReview.draftCounter';
 
 /**
  * Centralized state manager for draft review comments.
@@ -11,7 +10,6 @@ const STORAGE_KEY_COUNTER = 'copilotReview.draftCounter';
  */
 export class DraftStore implements vscode.Disposable {
     private drafts: DraftItem[] = [];
-    private _draftCounter = 0;
 
     private readonly _onDidChange = new vscode.EventEmitter<DraftItem[]>();
     readonly onDidChange = this._onDidChange.event;
@@ -20,16 +18,6 @@ export class DraftStore implements vscode.Disposable {
         private readonly workspaceState: vscode.Memento,
         private readonly commentController: vscode.CommentController
     ) {}
-
-    // ── Counter management ──────────────────────────────────────────
-
-    nextSequence(): number {
-        return ++this._draftCounter;
-    }
-
-    resetCounter(): void {
-        this._draftCounter = 0;
-    }
 
     // ── CRUD operations ─────────────────────────────────────────────
 
@@ -110,7 +98,6 @@ export class DraftStore implements vscode.Disposable {
      */
     async restore(): Promise<void> {
         const serialized = this.workspaceState.get<SerializedDraftItem[]>(STORAGE_KEY_DRAFTS, []);
-        this._draftCounter = this.workspaceState.get<number>(STORAGE_KEY_COUNTER, 0);
 
         for (const item of serialized) {
             try {
@@ -124,15 +111,16 @@ export class DraftStore implements vscode.Disposable {
 
                 // Recreate the comment thread in the editor
                 const thread = this.commentController.createCommentThread(uri, range, []);
+                thread.contextValue = 'draft';
                 thread.canReply = false;
                 thread.collapsibleState = vscode.CommentThreadCollapsibleState.Expanded;
-                thread.label = `DRAFT Comment #${item.sequence}`;
+                thread.label = `$(comment-discussion) Draft Comment`;
 
                 // Recreate the comment inside the thread
                 const comment = new PlanReviewComment(
                     item.text,
                     vscode.CommentMode.Preview,
-                    { name: ' ' },
+                    { name: '' },
                     thread,
                     'draft',
                     item.id
@@ -146,8 +134,7 @@ export class DraftStore implements vscode.Disposable {
                     range,
                     documentLanguage: item.documentLanguage,
                     documentText: item.documentText,
-                    thread,
-                    sequence: item.sequence,
+                    thread
                 });
             } catch (error) {
                 console.warn(`[CopilotReview] Failed to restore draft ${item.id}:`, error);
@@ -182,11 +169,9 @@ export class DraftStore implements vscode.Disposable {
                 endCharacter: d.range.end.character,
             },
             documentLanguage: d.documentLanguage,
-            documentText: d.documentText,
-            sequence: d.sequence,
+            documentText: d.documentText
         }));
         this.workspaceState.update(STORAGE_KEY_DRAFTS, serialized);
-        this.workspaceState.update(STORAGE_KEY_COUNTER, this._draftCounter);
     }
 
     dispose(): void {

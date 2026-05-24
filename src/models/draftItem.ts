@@ -12,7 +12,6 @@ export interface DraftItem {
     documentLanguage: string;
     documentText: string;
     thread: vscode.CommentThread;
-    sequence: number;
 }
 
 /**
@@ -31,5 +30,4 @@ export interface SerializedDraftItem {
     };
     documentLanguage: string;
     documentText: string;
-    sequence: number;
 }

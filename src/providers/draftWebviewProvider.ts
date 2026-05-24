@@ -17,7 +17,10 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
         private readonly _extensionUri: vscode.Uri,
         private readonly _store: DraftStore
     ) {
-        this._store.onDidChange(() => this._updateWebview());
+        this._store.onDidChange(() => {
+            this._updateWebview();
+            this._updateBadge();
+        });
         this._updateViewModeContext();
     }
 
@@ -66,9 +69,25 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
 
         this._sendViewMode();
         this._updateWebview();
+        this._updateBadge();
     }
 
     // ── Private helpers ─────────────────────────────────────────────
+
+    private _updateBadge(): void {
+        if (!this._view) {
+            return;
+        }
+        const count = this._store.getAllDrafts().length;
+        if (count > 0) {
+            this._view.badge = {
+                value: count,
+                tooltip: `${count} Draft Comments`
+            };
+        } else {
+            this._view.badge = undefined;
+        }
+    }
 
     private _updateViewModeContext(): void {
         vscode.commands.executeCommand('setContext', 'copilotReview.viewGrouped', this._viewMode === 'grouped');
@@ -113,7 +132,7 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
                 text: d.text,
                 filePath: vscode.workspace.asRelativePath(d.uri),
                 line: d.range.start.line + 1,
-                sequence: d.sequence
+                endLine: d.range.end.line + 1
             }))
         });
     }
@@ -296,8 +315,7 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
 
         function renderFlat(drafts) {
             drafts.forEach(draft => {
-                const sequenceStr = draft.sequence ? '#' + draft.sequence + ' ' : '';
-                const label = sequenceStr + draft.filePath + ':' + draft.line;
+                const label = draft.filePath + ' (Lines ' + draft.line + '-' + draft.endLine + ')';
                 container.appendChild(createDraftCard(draft, label));
             });
         }
@@ -333,8 +351,7 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
                 const itemsContainer = document.createElement('div');
                 itemsContainer.className = 'file-group-items';
                 items.forEach(draft => {
-                    const sequenceStr = draft.sequence ? '#' + draft.sequence + ' ' : '';
-                    const label = sequenceStr + 'L' + draft.line;
+                    const label = 'Lines ' + draft.line + '-' + draft.endLine;
                     itemsContainer.appendChild(createDraftCard(draft, label));
                 });
 

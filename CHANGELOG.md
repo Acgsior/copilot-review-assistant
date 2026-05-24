@@ -2,6 +2,31 @@
 
 All notable changes to the "copilot-review-assistant" extension will be documented in this file.
 
+## [0.0.10] - 2026-05-24
+### Added
+- UI: Added a dynamic draft count badge to the sidebar activity bar icon, indicating the number of draft comments currently active in the workspace.
+- Tests: Added comprehensive integration and unit tests for the Submit review flow (`submitDrafts`), verifying singleton registration and real-time state synchronization.
+
+### Changed
+- UI: Moved "Edit" and "Delete" buttons from individual comment headers to the draft thread's top title bar for cleaner spacing.
+- UI: Replaced the "Cancel" (Close) button on active drafts with the "Delete" button. The Cancel button now only appears while actively creating a new draft.
+- UI: Removed sequence numbers (`#1`, `#2`, etc.) entirely from draft threads and the sidebar list to avoid discontinuity gaps when canceling drafts.
+- UI: Automatically focus the input textarea upon new draft creation by inserting a placeholder comment in edit mode instead of using the native comment reply box.
+- View: Changed the sidebar view container title from "Plan Review: DRAFT" to "REVIEW: DRAFT".
+- View: Updated the Submit Webview title to "Submit Draft Comments" and relocated the submit/cancel buttons to directly below the summary text area.
+- View: Sidebar line numbers now show the full line range (e.g., `Lines 10-20`) in both flat and grouped modes instead of just the starting line.
+- Webview: The Submit Plan Review webview now acts as a true singleton; attempting to open a new one while it's active simply refocuses the existing panel.
+- Webview: The Submit Plan Review webview now automatically and seamlessly updates its draft list whenever a draft is added, edited, or removed from the workspace.
+- Webview: Redesigned the Submit webview text area and instruction text to match VS Code native Inline Modify styling and offer a more accurate workflow explanation.
+- Webview: Hides the description body block for comments with no text, preventing wasted vertical space in the preview panel.
+- Webview: Used a proper Draft Icon in the thread header and removed the unnecessary collapse button.
+
+### Fixed
+- Fixed an issue where submitting large code blocks (over threshold) duplicated the file path and line numbers in the Copilot Chat prompt.
+- Fixed a rendering issue where newly created drafts displayed an empty author line.
+- Fixed a critical bug where clicking the pencil edit button on the inline draft thread header had no effect.
+- Fixed activation timing in `package.json` by adding `onStartupFinished` so that the "Add Comment to Draft" Code Action appears instantly upon selection on first launch without requiring a right-click.
+
 ## [0.0.9] - 2026-05-24
 ### Added
 - **Architectural Refactoring**: Fully modularized the codebase into sub-components (`commands/`, `models/`, `state/`, `providers/`, `webviews/`), significantly improving code readability and maintainability. Cleaned up `extension.ts` down to ~40 lines.

@@ -4,7 +4,7 @@
   "description": "Send code snippets and review plans to Copilot Chat seamlessly via inline comments.",
   "publisher": "morganqin",
   "author": "Morgan Qin",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "icon": "icon.png",
   "engines": {
     "vscode": "^1.80.0"
@@ -12,7 +12,9 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
@@ -66,7 +68,7 @@
       "activitybar": [
         {
           "id": "copilot-review",
-          "title": "Plan Review",
+          "title": "REVIEW",
           "icon": "$(comment-discussion)"
         }
       ]
@@ -89,53 +91,50 @@
           "group": "1_modification"
         }
       ],
-      "comments/commentThread/context": [
-        {
-          "command": "copilotReview.addDraft",
-          "group": "inline@1"
-        },
-        {
-          "command": "copilotReview.cancelDraft",
-          "group": "inline@2"
-        }
-      ],
+      "comments/commentThread/context": [],
       "comments/commentThread/title": [
         {
-          "command": "copilotReview.cancelDraft",
-          "group": "navigation"
+          "command": "copilotReview.editDraft",
+          "group": "navigation@1",
+          "when": "commentThread == 'draft'"
+        },
+        {
+          "command": "copilotReview.deleteDraft",
+          "group": "navigation@2",
+          "when": "commentThread == 'draft'"
         }
       ],
       "comments/comment/title": [
         {
-          "command": "copilotReview.editDraft",
-          "group": "inline@1",
-          "when": "comment == draft"
-        },
-        {
-          "command": "copilotReview.deleteDraft",
-          "group": "inline@2",
-          "when": "comment == draft"
-        },
-        {
           "command": "copilotReview.saveDraftEdit",
           "group": "inline",
-          "when": "comment == draftEditing"
+          "when": "comment == 'draftEditing'"
+        },
+        {
+          "command": "copilotReview.addDraft",
+          "group": "inline@1",
+          "when": "comment == 'adding'"
+        },
+        {
+          "command": "copilotReview.cancelDraft",
+          "group": "inline@2",
+          "when": "comment == 'adding'"
         }
       ],
       "view/title": [
         {
           "command": "copilotReview.submitDrafts",
-          "when": "view == copilotReview.draftsView",
+          "when": "view == 'copilotReview.draftsView'",
           "group": "navigation@1"
         },
         {
           "command": "copilotReview.toggleViewGrouped",
-          "when": "view == copilotReview.draftsView && !copilotReview.viewGrouped",
+          "when": "view == 'copilotReview.draftsView' && !copilotReview.viewGrouped",
           "group": "navigation@2"
         },
         {
           "command": "copilotReview.toggleViewFlat",
-          "when": "view == copilotReview.draftsView && copilotReview.viewGrouped",
+          "when": "view == 'copilotReview.draftsView' && copilotReview.viewGrouped",
           "group": "navigation@2"
         }
       ],
@@ -149,7 +148,7 @@
       "view/item/context": [
         {
           "command": "copilotReview.deleteDraft",
-          "when": "view == copilotReview.draftsView",
+          "when": "view == 'copilotReview.draftsView'",
           "group": "inline"
         }
       ]
@@ -164,7 +163,7 @@
         },
         "copilotReview.draftTemplate": {
           "type": "string",
-          "default": "- `${filePath}` (Lines ${startLine}-${endLine})\n  ${codeBlock}\n  ${comment}\n\n",
+          "default": "- ${fileReference}\n  ${codeBlock}\n  ${comment}\n\n",
           "markdownDescription": "Template for each draft item. Variables: `${filePath}`, `${startLine}`, `${endLine}`, `${language}`, `${code}`, `${codeBlock}`, `${comment}`"
         },
         "copilotReview.codePreviewMaxLines": {

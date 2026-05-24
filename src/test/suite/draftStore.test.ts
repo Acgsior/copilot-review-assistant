@@ -55,8 +55,7 @@ suite('DraftStore Test Suite', () => {
             range,
             documentLanguage: 'typescript',
             documentText: 'const x = 1;',
-            thread,
-            sequence: store.nextSequence(),
+            thread
         };
     }
 
@@ -134,26 +133,6 @@ suite('DraftStore Test Suite', () => {
         assert.strictEqual(store.hasDrafts, false);
     });
 
-    // ── Counter tests ───────────────────────────────────────────────
-
-    test('nextSequence should increment counter', () => {
-        const seq1 = store.nextSequence();
-        const seq2 = store.nextSequence();
-        const seq3 = store.nextSequence();
-
-        assert.strictEqual(seq1, 1);
-        assert.strictEqual(seq2, 2);
-        assert.strictEqual(seq3, 3);
-    });
-
-    test('resetCounter should reset to zero', () => {
-        store.nextSequence();
-        store.nextSequence();
-        store.resetCounter();
-
-        assert.strictEqual(store.nextSequence(), 1);
-    });
-
     // ── Event tests ─────────────────────────────────────────────────
 
     test('onDidChange should fire on addDraft', (done) => {
@@ -211,26 +190,6 @@ suite('DraftStore Test Suite', () => {
         assert.strictEqual(newStore.getAllDrafts().length, 2);
         assert.ok(newStore.getDraft('d1'));
         assert.ok(newStore.getDraft('d2'));
-
-        newStore.dispose();
-        newController.dispose();
-    });
-
-    test('persistence: counter should survive store recreation', async () => {
-        store.nextSequence();
-        store.nextSequence();
-        store.nextSequence();
-        // Force a persist by adding a draft
-        store.addDraft(createMockDraft('d1'));
-
-        const newController = vscode.comments.createCommentController('test-controller-3', 'Test 3');
-        const newStore = new DraftStore(memento, newController);
-
-        await newStore.restore();
-
-        // Counter should continue from 4 (we called nextSequence 3 times + 1 from createMockDraft)
-        const nextSeq = newStore.nextSequence();
-        assert.strictEqual(nextSeq, 5);
 
         newStore.dispose();
         newController.dispose();

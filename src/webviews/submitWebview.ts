@@ -10,44 +10,14 @@ export function getSubmitWebviewContent(drafts: DraftItem[]): string {
     const config = vscode.workspace.getConfiguration('copilotReview');
     const maxPreviewLines = config.get<number>('codePreviewMaxLines', 20);
 
-    const draftsHtml = drafts.map(draft => {
-        const filePath = vscode.workspace.asRelativePath(draft.uri);
-        const startLine = draft.range.start.line + 1;
-        const endLine = draft.range.end.line + 1;
-        const sequenceStr = draft.sequence ? `#${draft.sequence} ` : '';
-
-        // Build code preview
-        let codePreviewHtml = '';
-        if (maxPreviewLines > 0 && draft.documentText) {
-            const allLines = draft.documentText.split('\n');
-            const truncated = allLines.length > maxPreviewLines;
-            const displayLines = truncated ? allLines.slice(0, maxPreviewLines) : allLines;
-            const displayCode = escapeHtml(displayLines.join('\n'));
-            const suffix = truncated ? `\n... (+${allLines.length - maxPreviewLines} lines)` : '';
-
-            codePreviewHtml = `
-            <details class="code-preview">
-                <summary class="code-preview-toggle">
-                    <span class="chevron-icon">&#9654;</span>
-                    Code snippet (Lines ${startLine}-${endLine}, ${allLines.length} lines)
-                </summary>
-                <pre class="code-block"><code>${displayCode}${escapeHtml(suffix)}</code></pre>
-            </details>`;
-        }
-
-        return `<div class="draft-card">
-            <div class="draft-header">${sequenceStr}${escapeHtml(filePath)}:${startLine}</div>
-            <div class="draft-body">${escapeHtml(draft.text)}</div>
-            ${codePreviewHtml}
-        </div>`;
-    }).join('');
+    const draftsHtml = getDraftsHtml(drafts, maxPreviewLines);
 
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Submit Plan Review</title>
+    <title>Submit Draft Comments</title>
     <style>
         body {
             font-family: var(--vscode-font-family);
@@ -79,16 +49,17 @@ export function getSubmitWebviewContent(drafts: DraftItem[]): string {
             color: var(--vscode-input-foreground);
             border: 1px solid var(--vscode-input-border, var(--vscode-widget-border, transparent));
             border-radius: 2px;
-            padding: 8px;
-            font-family: var(--vscode-editor-font-family);
-            font-size: var(--vscode-editor-font-size);
+            padding: 8px 10px;
+            font-family: var(--vscode-font-family);
+            font-size: var(--vscode-font-size, 13px);
             resize: vertical;
             box-sizing: border-box;
-            transition: border-color 0.15s;
+            outline: none;
         }
         textarea:focus {
-            outline: none;
-            border-color: var(--vscode-focusBorder);
+            outline: 1px solid var(--vscode-focusBorder);
+            outline-offset: -1px;
+            border-color: transparent;
         }
         h3 {
             font-size: 12px;
@@ -206,18 +177,18 @@ export function getSubmitWebviewContent(drafts: DraftItem[]): string {
     </style>
 </head>
 <body>
-    <h2>Add a Summary Comment</h2>
-    <p>This markdown text will be prepended to your drafted code reviews before sending to Copilot Chat.</p>
+    <h2>Submit Draft Comments</h2>
+    <p>Add your instructions or questions below. This summary will be sent to Copilot Chat along with all the selected code snippets.</p>
     <textarea id="summaryText" placeholder="Write your summary here..." autofocus></textarea>
-
-    <h3>Draft Comments to Submit</h3>
-    <div class="drafts-container">
-        ${draftsHtml}
-    </div>
-
+    
     <div class="button-group">
         <button id="submitBtn" class="btn-primary">Submit to Copilot Chat</button>
         <button id="cancelBtn" class="btn-secondary">Cancel</button>
+    </div>
+
+    <h3>Draft Comments to Submit</h3>
+    <div class="drafts-container" id="draftsContainer">
+        ${draftsHtml}
     </div>
 
     <script>
@@ -231,9 +202,50 @@ export function getSubmitWebviewContent(drafts: DraftItem[]): string {
         document.getElementById('cancelBtn').addEventListener('click', () => {
             vscode.postMessage({ command: 'cancel' });
         });
+
+        window.addEventListener('message', event => {
+            const message = event.data;
+            if (message.command === 'updateDraftsHtml') {
+                document.getElementById('draftsContainer').innerHTML = message.html;
+            }
+        });
     </script>
 </body>
 </html>`;
+}
+
+export function getDraftsHtml(drafts: DraftItem[], maxPreviewLines: number): string {
+    return drafts.map(draft => {
+        const filePath = vscode.workspace.asRelativePath(draft.uri);
+        const startLine = draft.range.start.line + 1;
+        const endLine = draft.range.end.line + 1;
+
+        let codePreviewHtml = '';
+        if (maxPreviewLines > 0 && draft.documentText) {
+            const allLines = draft.documentText.split('\n');
+            const truncated = allLines.length > maxPreviewLines;
+            const displayLines = truncated ? allLines.slice(0, maxPreviewLines) : allLines;
+            const displayCode = escapeHtml(displayLines.join('\n'));
+            const suffix = truncated ? `\n... (+${allLines.length - maxPreviewLines} lines)` : '';
+
+            codePreviewHtml = `
+            <details class="code-preview">
+                <summary class="code-preview-toggle">
+                    <span class="chevron-icon">&#9654;</span>
+                    Code snippet (Lines ${startLine}-${endLine}, ${allLines.length} lines)
+                </summary>
+                <pre class="code-block"><code>${displayCode}${escapeHtml(suffix)}</code></pre>
+            </details>`;
+        }
+
+        const bodyHtml = draft.text.trim() ? `<div class="draft-body">${escapeHtml(draft.text)}</div>` : '';
+
+        return `<div class="draft-card">
+            <div class="draft-header">${escapeHtml(filePath)} (Lines ${startLine}-${endLine})</div>
+            ${bodyHtml}
+            ${codePreviewHtml}
+        </div>`;
+    }).join('');
 }
 
 function escapeHtml(unsafe: unknown): string {
