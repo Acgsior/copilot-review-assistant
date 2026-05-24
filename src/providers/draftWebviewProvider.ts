@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { DraftStore } from '../state/draftStore';
+import { PlanReviewComment } from '../models/planReviewComment';
 
 type ViewMode = 'flat' | 'grouped';
 
@@ -60,6 +61,9 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
                 case 'editDraft':
                     this._editDraft(data.id);
                     break;
+                case 'deleteAllDrafts':
+                    vscode.commands.executeCommand('copilotReview.clearAllDrafts');
+                    break;
                 case 'webviewLoaded':
                     this._sendViewMode();
                     this._updateWebview();
@@ -111,7 +115,7 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
         if (draft) {
             vscode.window.showTextDocument(draft.uri, { selection: draft.thread.range || draft.range }).then(() => {
                 const comment = draft.thread.comments.find(
-                    (c: vscode.Comment) => (c as DraftComment).draftId === id
+                    (c: vscode.Comment) => (c as PlanReviewComment).draftId === id
                 );
                 if (comment) {
                     vscode.commands.executeCommand('copilotReview.editDraft', comment);
@@ -149,7 +153,7 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
     <style>
         body {
             font-family: var(--vscode-font-family);
-            padding: 10px;
+            padding: 6px;
             color: var(--vscode-foreground);
             background-color: var(--vscode-sideBar-background, var(--vscode-editor-background));
         }
@@ -157,8 +161,8 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
             background-color: var(--vscode-editorWidget-background);
             border: 1px solid var(--vscode-widget-border, transparent);
             border-radius: 2px;
-            padding: 10px;
-            margin-bottom: 8px;
+            padding: 8px;
+            margin-bottom: 6px;
             display: flex;
             flex-direction: column;
             gap: 6px;
@@ -394,7 +398,7 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
             const deleteBtn = document.createElement('button');
             deleteBtn.className = 'icon-btn';
             deleteBtn.title = 'Delete Draft';
-            deleteBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M8 8.707l3.646 3.647.708-.707L8.707 8l3.647-3.646-.707-.708L8 7.293 4.354 3.646l-.707.708L7.293 8l-3.646 3.646.707.707L8 8.707z"/></svg>';
+            deleteBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M10 3h3v1h-1v9l-1 1H5l-1-1V4H3V3h3V2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1zM9 2H7v1h2V2zM5 4v9h6V4H5zm1 2h1v5H6V6zm3 0h1v5H9V6z"/></svg>';
             deleteBtn.onclick = (e) => {
                 e.stopPropagation();
                 vscode.postMessage({ type: 'deleteDraft', id: draft.id });
@@ -423,9 +427,4 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
 </body>
 </html>`;
     }
-}
-
-/** Type helper for accessing draftId on comments */
-interface DraftComment extends vscode.Comment {
-    draftId?: string;
 }

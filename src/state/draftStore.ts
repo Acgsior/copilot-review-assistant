@@ -79,6 +79,7 @@ export class DraftStore implements vscode.Disposable {
     }
 
     getAllDrafts(): DraftItem[] {
+        this._pruneDisposed();
         return [...this.drafts];
     }
 
@@ -114,7 +115,7 @@ export class DraftStore implements vscode.Disposable {
                 thread.contextValue = 'draft';
                 thread.canReply = false;
                 thread.collapsibleState = vscode.CommentThreadCollapsibleState.Expanded;
-                thread.label = `$(comment-discussion) Draft Comment`;
+                thread.label = 'Draft Comment';
 
                 // Recreate the comment inside the thread
                 const comment = new PlanReviewComment(
@@ -158,6 +159,7 @@ export class DraftStore implements vscode.Disposable {
     }
 
     private _persist(): void {
+        this._pruneDisposed();
         const serialized: SerializedDraftItem[] = this.drafts.map(d => ({
             id: d.id,
             text: d.text,
@@ -176,5 +178,48 @@ export class DraftStore implements vscode.Disposable {
 
     dispose(): void {
         this._onDidChange.dispose();
+    }
+
+    // ── Thread health check ─────────────────────────────────────────
+
+    /**
+     * Check whether a CommentThread is still alive (not disposed).
+     */
+    private _isThreadAlive(thread: vscode.CommentThread): boolean {
+        try {
+            // Accessing .comments on a disposed thread throws
+            void thread.comments;
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    /**
+     * Remove drafts whose threads have been disposed externally.
+     * Fires a change event only if any drafts were actually removed.
+     */
+    private _pruneDisposed(): void {
+        const before = this.drafts.length;
+        this.drafts = this.drafts.filter(d => this._isThreadAlive(d.thread));
+        if (this.drafts.length !== before) {
+            this._updateContext();
+            // Persist the cleaned-up state (call _persist helper directly
+            // to avoid infinite recursion since _persist also calls _pruneDisposed)
+            const serialized: SerializedDraftItem[] = this.drafts.map(d => ({
+                id: d.id,
+                text: d.text,
+                uri: d.uri.toString(),
+                range: {
+                    startLine: (d.thread.range || d.range).start.line,
+                    startCharacter: (d.thread.range || d.range).start.character,
+                    endLine: (d.thread.range || d.range).end.line,
+                    endCharacter: (d.thread.range || d.range).end.character,
+                },
+                documentLanguage: d.documentLanguage,
+                documentText: d.documentText
+            }));
+            this.workspaceState.update(STORAGE_KEY_DRAFTS, serialized);
+        }
     }
 }

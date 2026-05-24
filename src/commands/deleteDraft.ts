@@ -1,8 +1,11 @@
+import * as vscode from 'vscode';
+import { PlanReviewComment } from '../models/planReviewComment';
 import { DraftStore } from '../state/draftStore';
 
 /**
  * Deletes a draft by ID, cleaning up its associated comment thread.
- * Accepts either a raw string ID or an object with draftId/id property.
+ * Accepts a raw string ID, a CommentThread, a PlanReviewComment,
+ * or any object with a draftId/id property (e.g. from the webview).
  */
 export function deleteDraft(arg: unknown, store: DraftStore): void {
     let id: string | undefined;
@@ -10,8 +13,19 @@ export function deleteDraft(arg: unknown, store: DraftStore): void {
     if (typeof arg === 'string') {
         id = arg;
     } else if (arg && typeof arg === 'object') {
-        const obj = arg as Record<string, unknown>;
-        id = (obj.draftId || obj.id) as string | undefined;
+        if ('comments' in arg) {
+            // CommentThread – extract draftId from the first comment
+            const thread = arg as vscode.CommentThread;
+            if (thread.comments && thread.comments.length > 0) {
+                id = (thread.comments[0] as PlanReviewComment).draftId;
+            }
+        } else if ('draftId' in arg) {
+            // PlanReviewComment
+            id = (arg as PlanReviewComment).draftId;
+        } else {
+            const obj = arg as Record<string, unknown>;
+            id = (obj.id) as string | undefined;
+        }
     }
 
     if (id) {

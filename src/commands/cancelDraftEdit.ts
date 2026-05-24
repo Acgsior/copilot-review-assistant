@@ -2,9 +2,11 @@ import * as vscode from 'vscode';
 import { PlanReviewComment } from '../models/planReviewComment';
 
 /**
- * Switches a draft comment back into editing mode.
+ * Cancels an in-progress edit on a draft comment.
+ * Restores the comment body to its previously saved state and
+ * switches it back to Preview mode.
  */
-export function editDraft(arg: unknown): void {
+export function cancelDraftEdit(arg: unknown): void {
     let comment: PlanReviewComment | undefined;
 
     if (arg && typeof arg === 'object') {
@@ -19,12 +21,13 @@ export function editDraft(arg: unknown): void {
     }
 
     if (comment) {
-        comment.savedBody = comment.body;
-        comment.mode = vscode.CommentMode.Editing;
-        comment.contextValue = 'draftEditing';
+        // Restore to the previously saved body
+        comment.body = comment.savedBody;
+        comment.mode = vscode.CommentMode.Preview;
+        comment.contextValue = 'draft';
+
         if (comment.parent) {
-            comment.parent.label = 'Edit Draft';
-            comment.parent.collapsibleState = vscode.CommentThreadCollapsibleState.Expanded;
+            comment.parent.label = 'Draft Comment';
             // Trigger UI refresh by reassigning comments array
             comment.parent.comments = [...comment.parent.comments];
         }

@@ -25,7 +25,7 @@
       },
       {
         "command": "copilotReview.addDraft",
-        "title": "Add to Draft"
+        "title": "Add Draft"
       },
       {
         "command": "copilotReview.cancelDraft",
@@ -48,7 +48,16 @@
       },
       {
         "command": "copilotReview.saveDraftEdit",
-        "title": "Save Draft"
+        "title": "Update Draft"
+      },
+      {
+        "command": "copilotReview.cancelDraftEdit",
+        "title": "Cancel"
+      },
+      {
+        "command": "copilotReview.clearAllDrafts",
+        "title": "Clear All Drafts",
+        "icon": "$(trash)"
       },
       {
         "command": "copilotReview.toggleViewGrouped",
@@ -91,11 +100,13 @@
       "comments/commentThread/context": [
         {
           "command": "copilotReview.addDraft",
-          "group": "inline@1"
+          "group": "inline@1",
+          "when": "commentThread != 'draft'"
         },
         {
           "command": "copilotReview.cancelDraft",
-          "group": "inline@2"
+          "group": "inline@2",
+          "when": "commentThread != 'draft'"
         }
       ],
       "comments/commentThread/title": [
@@ -110,10 +121,16 @@
           "when": "commentThread == 'draft'"
         }
       ],
-      "comments/comment/title": [
+      "comments/comment/title": [],
+      "comments/comment/context": [
         {
           "command": "copilotReview.saveDraftEdit",
-          "group": "inline",
+          "group": "inline@1",
+          "when": "comment == 'draftEditing'"
+        },
+        {
+          "command": "copilotReview.cancelDraftEdit",
+          "group": "inline@2",
           "when": "comment == 'draftEditing'"
         }
       ],
@@ -132,6 +149,11 @@
           "command": "copilotReview.toggleViewFlat",
           "when": "view == 'copilotReview.draftsView' && copilotReview.viewGrouped",
           "group": "navigation@2"
+        },
+        {
+          "command": "copilotReview.clearAllDrafts",
+          "when": "view == 'copilotReview.draftsView'",
+          "group": "navigation@3"
         }
       ],
       "editor/title": [

@@ -5,7 +5,7 @@ import { submitDrafts } from '../../commands/submitDrafts';
 
 // Mock Webview Panel
 class MockWebviewPanel implements vscode.WebviewPanel {
-    viewType = 'submitPlanReview';
+    viewType = 'submitDraftsReview';
     title = 'Submit Plan Review';
     iconPath?: vscode.Uri | { light: vscode.Uri; dark: vscode.Uri; } | vscode.ThemeIcon | undefined;
     webview = {
@@ -51,7 +51,7 @@ suite('SubmitDrafts Test Suite', () => {
         const memento = {
             keys: () => [],
             get: (_key: string, defaultValue?: any) => defaultValue,
-            update: async () => {}
+            update: async () => { }
         } as unknown as vscode.Memento;
 
         commentController = vscode.comments.createCommentController('test-controller', 'Test');
@@ -71,7 +71,7 @@ suite('SubmitDrafts Test Suite', () => {
         store.dispose();
         commentController.dispose();
         vscode.window.createWebviewPanel = originalCreateWebviewPanel;
-        
+
         // Ensure panels are disposed to reset module-level singleton state
         for (const panel of mockPanels) {
             panel.dispose();
@@ -115,7 +115,7 @@ suite('SubmitDrafts Test Suite', () => {
 
         await submitDrafts(store);
         const panel = mockPanels[0];
-        
+
         // Add a new draft
         store.addDraft({
             id: 'd2',

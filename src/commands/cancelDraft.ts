@@ -31,5 +31,9 @@ export function cancelDraft(arg: unknown, store: DraftStore): void {
         }
     }
 
-    thread.dispose();
+    try {
+        thread.dispose();
+    } catch {
+        // Thread may already be disposed
+    }
 }

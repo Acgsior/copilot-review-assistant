@@ -26,6 +26,10 @@ export function saveDraftEdit(comment: PlanReviewComment, store: DraftStore): vo
         store.updateDraftText(comment.draftId, newText);
     }
 
+    // Restore label and expanded state
+    comment.parent.label = 'Draft Comment';
+    comment.parent.collapsibleState = vscode.CommentThreadCollapsibleState.Expanded;
+
     // Trigger UI refresh
     comment.parent.comments = [...comment.parent.comments];
 }

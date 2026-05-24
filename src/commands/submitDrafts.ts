@@ -26,8 +26,8 @@ export async function submitDrafts(store: DraftStore): Promise<void> {
     }
 
     const panel = vscode.window.createWebviewPanel(
-        'submitPlanReview',
-        'Submit Plan Review',
+        'submitDraftsReview',
+        'Submit Drafts Review',
         vscode.ViewColumn.One,
         { enableScripts: true }
     );
@@ -119,7 +119,7 @@ async function buildDraftEntry(draft: DraftItem, template: string, inlineThresho
 
     let codeBlock: string;
     let fileReference: string;
-    
+
     if (lineCount > inlineThreshold) {
         fileReference = `${filePath}#L${startLine}~L${endLine}`;
         codeBlock = '';

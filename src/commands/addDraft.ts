@@ -35,7 +35,7 @@ export async function addDraft(reply: vscode.CommentReply, store: DraftStore): P
         const comment = new PlanReviewComment(
             userSuggestion,
             vscode.CommentMode.Preview,
-            { name: 'Draft' },
+            { name: '' },
             thread,
             'draft',
             draftId
@@ -43,8 +43,9 @@ export async function addDraft(reply: vscode.CommentReply, store: DraftStore): P
 
         thread.comments = [comment];
         thread.contextValue = 'draft';
-        thread.label = `$(comment-discussion) Draft Comment`;
+        thread.label = 'Draft Comment';
         thread.canReply = false;
+        thread.collapsibleState = vscode.CommentThreadCollapsibleState.Expanded;
 
         const draftItem: DraftItem = {
             id: draftId,

@@ -5,6 +5,7 @@ import { PlanReviewComment } from '../models/planReviewComment';
 import { createReviewThread } from './createThread';
 import { addDraft } from './addDraft';
 import { cancelDraft } from './cancelDraft';
+import { cancelDraftEdit } from './cancelDraftEdit';
 import { deleteDraft } from './deleteDraft';
 import { editDraft } from './editDraft';
 import { saveDraftEdit } from './saveDraftEdit';
@@ -53,6 +54,26 @@ export function registerCommands(
 
         vscode.commands.registerCommand('copilotReview.toggleViewFlat', () => {
             draftsProvider.setViewMode('flat');
+        }),
+
+        vscode.commands.registerCommand('copilotReview.cancelDraftEdit', (arg: unknown) => {
+            cancelDraftEdit(arg);
+        }),
+
+        vscode.commands.registerCommand('copilotReview.clearAllDrafts', async () => {
+            const drafts = store.getAllDrafts();
+            if (drafts.length === 0) {
+                vscode.window.showInformationMessage('No drafts to delete.');
+                return;
+            }
+            const answer = await vscode.window.showWarningMessage(
+                `Are you sure you want to delete all ${drafts.length} draft(s)?`,
+                { modal: true },
+                'Delete All'
+            );
+            if (answer === 'Delete All') {
+                store.clearDrafts();
+            }
         }),
     ];
 }
