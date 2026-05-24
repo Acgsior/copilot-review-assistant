@@ -23,8 +23,8 @@ export function registerCommands(
             createReviewThread(commentController);
         }),
 
-        vscode.commands.registerCommand('copilotReview.addDraft', (comment: PlanReviewComment) => {
-            addDraft(comment, store);
+        vscode.commands.registerCommand('copilotReview.addDraft', (reply: vscode.CommentReply) => {
+            addDraft(reply, store);
         }),
 
         vscode.commands.registerCommand('copilotReview.cancelDraft', (arg: unknown) => {

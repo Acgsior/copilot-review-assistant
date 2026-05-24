@@ -7,9 +7,9 @@ import { DraftStore } from '../state/draftStore';
  * Adds the user's comment as a draft review, capturing the selected code context.
  * Truncates code snippets exceeding 500 lines to avoid Copilot prompt limits.
  */
-export async function addDraft(comment: PlanReviewComment, store: DraftStore): Promise<void> {
-    const userSuggestion = typeof comment.body === 'string' ? comment.body : comment.body.value;
-    const thread = comment.parent;
+export async function addDraft(reply: vscode.CommentReply, store: DraftStore): Promise<void> {
+    const userSuggestion = reply.text;
+    const thread = reply.thread;
     if (!thread) {
         return;
     }
@@ -30,12 +30,16 @@ export async function addDraft(comment: PlanReviewComment, store: DraftStore): P
             text = lines.slice(0, 500).join('\n') + '\n\n... (code truncated due to length)';
         }
 
-        const draftId = comment.draftId || `draft-${Date.now()}`;
+        const draftId = `draft-${Date.now()}`;
 
-        comment.savedBody = comment.body;
-        comment.mode = vscode.CommentMode.Preview;
-        comment.contextValue = 'draft';
-        comment.draftId = draftId;
+        const comment = new PlanReviewComment(
+            userSuggestion,
+            vscode.CommentMode.Preview,
+            { name: 'Draft' },
+            thread,
+            'draft',
+            draftId
+        );
 
         thread.comments = [comment];
         thread.contextValue = 'draft';

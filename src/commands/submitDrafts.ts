@@ -32,17 +32,17 @@ export async function submitDrafts(store: DraftStore): Promise<void> {
         { enableScripts: true }
     );
 
-    panel.webview.html = getSubmitWebviewContent(drafts);
+    panel.webview.html = await getSubmitWebviewContent(drafts);
     activePanel = panel;
 
-    const disposable = store.onDidChange(() => {
+    const disposable = store.onDidChange(async () => {
         if (activePanel) {
             const currentDrafts = store.getAllDrafts();
             const config = vscode.workspace.getConfiguration('copilotReview');
             const maxPreviewLines = config.get<number>('codePreviewMaxLines', 20);
             activePanel.webview.postMessage({
                 command: 'updateDraftsHtml',
-                html: getDraftsHtml(currentDrafts, maxPreviewLines)
+                html: await getDraftsHtml(currentDrafts, maxPreviewLines)
             });
         }
     });
@@ -50,7 +50,7 @@ export async function submitDrafts(store: DraftStore): Promise<void> {
     panel.webview.onDidReceiveMessage(async message => {
         if (message.command === 'submit') {
             const summary: string = message.text;
-            const prompt = buildPrompt(summary, drafts);
+            const prompt = await buildPrompt(summary, drafts);
 
             try {
                 await vscode.commands.executeCommand('workbench.action.chat.open', {
@@ -75,7 +75,7 @@ export async function submitDrafts(store: DraftStore): Promise<void> {
 
 // ── Prompt building ─────────────────────────────────────────────────
 
-function buildPrompt(summary: string, drafts: DraftItem[]): string {
+async function buildPrompt(summary: string, drafts: DraftItem[]): Promise<string> {
     const config = vscode.workspace.getConfiguration('copilotReview');
     const promptTemplate = config.get<string>(
         'promptTemplate',
@@ -87,7 +87,8 @@ function buildPrompt(summary: string, drafts: DraftItem[]): string {
     );
     const inlineThreshold = config.get<number>('inlineCodeThreshold', 10);
 
-    const draftsStr = drafts.map(draft => buildDraftEntry(draft, draftTemplate, inlineThreshold)).join('');
+    const entries = await Promise.all(drafts.map(draft => buildDraftEntry(draft, draftTemplate, inlineThreshold)));
+    const draftsStr = entries.join('');
 
     let result = promptTemplate
         .replace('${summary}', summary || '')
@@ -101,11 +102,20 @@ function buildPrompt(summary: string, drafts: DraftItem[]): string {
     return result;
 }
 
-function buildDraftEntry(draft: DraftItem, template: string, inlineThreshold: number): string {
+async function buildDraftEntry(draft: DraftItem, template: string, inlineThreshold: number): Promise<string> {
     const filePath = vscode.workspace.asRelativePath(draft.uri);
-    const startLine = draft.range.start.line + 1;
-    const endLine = draft.range.end.line + 1;
-    const lineCount = draft.documentText.split('\n').length;
+    const startLine = (draft.thread.range || draft.range).start.line + 1;
+    const endLine = (draft.thread.range || draft.range).end.line + 1;
+
+    let documentText = draft.documentText;
+    try {
+        const document = await vscode.workspace.openTextDocument(draft.uri);
+        documentText = document.getText(draft.thread.range || draft.range);
+    } catch (e) {
+        // fallback to snapshot
+    }
+
+    const lineCount = documentText.split('\n').length;
 
     let codeBlock: string;
     let fileReference: string;
@@ -115,7 +125,7 @@ function buildDraftEntry(draft: DraftItem, template: string, inlineThreshold: nu
         codeBlock = '';
     } else {
         fileReference = `\`${filePath}\` (Lines ${startLine}-${endLine})`;
-        const indentedCode = draft.documentText.split('\n').join('\n  ');
+        const indentedCode = documentText.split('\n').join('\n  ');
         codeBlock = `\`\`\`${draft.documentLanguage}\n  ${indentedCode}\n  \`\`\``;
     }
 
@@ -127,7 +137,7 @@ function buildDraftEntry(draft: DraftItem, template: string, inlineThreshold: nu
         .replace('${startLine}', String(startLine))
         .replace('${endLine}', String(endLine))
         .replace('${language}', draft.documentLanguage)
-        .replace('${code}', draft.documentText)
+        .replace('${code}', documentText)
         .replace('${fileReference}', fileReference)
         .replace('${codeBlock}', codeBlock)
         .replace('${comment}', commentStr)

@@ -2,6 +2,17 @@
 
 All notable changes to the "copilot-review-assistant" extension will be documented in this file.
 
+## [0.0.11] - 2026-05-24
+### Changed
+- **UI 界面改进**:
+  - 恢复 "Add to Draft" (Primary) 和 "Cancel" (Secondary) 文字按钮，替代了之前的图标按钮，提供更清晰的操作导向。
+  - 缩小了添加草稿评论文本框的上下边距（Padding），让整体界面高度更紧凑，空间利用更合理。
+  - 统一编辑草稿评论界面（Save Draft 按钮）为文字按钮。
+
+### Fixed
+- **实时同步与状态管理**:
+  - 彻底修复了草稿评论在编辑器、侧边栏和提交预览页面之间数据不同步的问题。通过使用实时解析的 `thread.range` 和最新的 `documentText` 替代静态快照，确保代码被编辑或修改后，所有相关界面展示的行号和预览片段都能实时、精准地同步更新。
+
 ## [0.0.10] - 2026-05-24
 ### Added
 - UI: Added a dynamic draft count badge to the sidebar activity bar icon, indicating the number of draft comments currently active in the workspace.

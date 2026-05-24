@@ -102,14 +102,14 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
     private _openDraft(id: string): void {
         const draft = this._store.getDraft(id);
         if (draft) {
-            vscode.window.showTextDocument(draft.uri, { selection: draft.range });
+            vscode.window.showTextDocument(draft.uri, { selection: draft.thread.range || draft.range });
         }
     }
 
     private _editDraft(id: string): void {
         const draft = this._store.getDraft(id);
         if (draft) {
-            vscode.window.showTextDocument(draft.uri, { selection: draft.range }).then(() => {
+            vscode.window.showTextDocument(draft.uri, { selection: draft.thread.range || draft.range }).then(() => {
                 const comment = draft.thread.comments.find(
                     (c: vscode.Comment) => (c as DraftComment).draftId === id
                 );
@@ -131,8 +131,8 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
                 id: d.id,
                 text: d.text,
                 filePath: vscode.workspace.asRelativePath(d.uri),
-                line: d.range.start.line + 1,
-                endLine: d.range.end.line + 1
+                line: (d.thread.range || d.range).start.line + 1,
+                endLine: (d.thread.range || d.range).end.line + 1
             }))
         });
     }

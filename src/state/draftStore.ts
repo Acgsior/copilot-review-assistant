@@ -163,10 +163,10 @@ export class DraftStore implements vscode.Disposable {
             text: d.text,
             uri: d.uri.toString(),
             range: {
-                startLine: d.range.start.line,
-                startCharacter: d.range.start.character,
-                endLine: d.range.end.line,
-                endCharacter: d.range.end.character,
+                startLine: (d.thread.range || d.range).start.line,
+                startCharacter: (d.thread.range || d.range).start.character,
+                endLine: (d.thread.range || d.range).end.line,
+                endCharacter: (d.thread.range || d.range).end.character,
             },
             documentLanguage: d.documentLanguage,
             documentText: d.documentText

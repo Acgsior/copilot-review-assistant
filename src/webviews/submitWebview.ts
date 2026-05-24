@@ -6,11 +6,11 @@ import { DraftItem } from '../models/draftItem';
  * Each draft card includes a collapsible code preview (capped by codePreviewMaxLines config).
  * Uses VS Code native CSS variables for consistent theming.
  */
-export function getSubmitWebviewContent(drafts: DraftItem[]): string {
+export async function getSubmitWebviewContent(drafts: DraftItem[]): Promise<string> {
     const config = vscode.workspace.getConfiguration('copilotReview');
     const maxPreviewLines = config.get<number>('codePreviewMaxLines', 20);
 
-    const draftsHtml = getDraftsHtml(drafts, maxPreviewLines);
+    const draftsHtml = await getDraftsHtml(drafts, maxPreviewLines);
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -214,15 +214,23 @@ export function getSubmitWebviewContent(drafts: DraftItem[]): string {
 </html>`;
 }
 
-export function getDraftsHtml(drafts: DraftItem[], maxPreviewLines: number): string {
-    return drafts.map(draft => {
+export async function getDraftsHtml(drafts: DraftItem[], maxPreviewLines: number): Promise<string> {
+    const draftEntries = await Promise.all(drafts.map(async draft => {
         const filePath = vscode.workspace.asRelativePath(draft.uri);
-        const startLine = draft.range.start.line + 1;
-        const endLine = draft.range.end.line + 1;
+        const startLine = (draft.thread.range || draft.range).start.line + 1;
+        const endLine = (draft.thread.range || draft.range).end.line + 1;
+
+        let documentText = draft.documentText;
+        try {
+            const document = await vscode.workspace.openTextDocument(draft.uri);
+            documentText = document.getText(draft.thread.range || draft.range);
+        } catch (e) {
+            // fallback to snapshot
+        }
 
         let codePreviewHtml = '';
-        if (maxPreviewLines > 0 && draft.documentText) {
-            const allLines = draft.documentText.split('\n');
+        if (maxPreviewLines > 0 && documentText) {
+            const allLines = documentText.split('\n');
             const truncated = allLines.length > maxPreviewLines;
             const displayLines = truncated ? allLines.slice(0, maxPreviewLines) : allLines;
             const displayCode = escapeHtml(displayLines.join('\n'));
@@ -245,7 +253,8 @@ export function getDraftsHtml(drafts: DraftItem[], maxPreviewLines: number): str
             ${bodyHtml}
             ${codePreviewHtml}
         </div>`;
-    }).join('');
+    }));
+    return draftEntries.join('');
 }
 
 function escapeHtml(unsafe: unknown): string {
