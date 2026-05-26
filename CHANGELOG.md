@@ -2,6 +2,10 @@
 
 All notable changes to the "copilot-review-assistant" extension will be documented in this file.
 
+## [1.0.1] - 2026-05-26
+### Fixed
+- **徽章与侧边栏数量同步**: 修复了清空所有 Draft Comments 或是点击右上角清除按钮后，Activity Bar/Webview 侧边栏的 Draft Count 徽章（Badge）仍显示原有数字无法被清除的同步问题。通过规避 VS Code 不响应 `badge = undefined` 的 API bug，改用 `{ value: 0, tooltip: '' }` 强制重置并隐藏 Badge，从而彻底解决该同步故障。
+
 ## [1.0.0] - 2026-05-25
 ### Added
 - **Official 1.0.0 Release**: Stable release with the complete Draft Management System, enabling seamless creation, editing, submission, and state persistence for plan reviews.

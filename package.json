@@ -4,7 +4,7 @@
   "description": "Send code snippets and review plans to Copilot Chat seamlessly via inline comments.",
   "publisher": "morganqin",
   "author": "Morgan Qin",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "icon": "icon.png",
   "engines": {
     "vscode": "^1.80.0"
@@ -73,14 +73,14 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "copilot-review",
+          "id": "copilot-review-sidebar",
           "title": "REVIEW",
           "icon": "$(comment-discussion)"
         }
       ]
     },
     "views": {
-      "copilot-review": [
+      "copilot-review-sidebar": [
         {
           "id": "copilotReview.draftsView",
           "name": "DRAFT",

@@ -19,8 +19,8 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
         private readonly _store: DraftStore
     ) {
         this._store.onDidChange(() => {
-            this._updateWebview();
-            this._updateBadge();
+            try { this._updateBadge(); } catch { /* view may be disposed */ }
+            try { this._updateWebview(); } catch { /* webview may be disposed */ }
         });
         this._updateViewModeContext();
     }
@@ -67,7 +67,22 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
                 case 'webviewLoaded':
                     this._sendViewMode();
                     this._updateWebview();
+                    this._updateBadge();
                     break;
+            }
+        });
+
+        // Clean up _view reference when the webview view is disposed
+        // so we don't try to set badge on a disposed view
+        webviewView.onDidDispose(() => {
+            this._view = undefined;
+        });
+
+        // Re-sync badge and content when the view becomes visible again
+        webviewView.onDidChangeVisibility(() => {
+            if (webviewView.visible) {
+                this._updateWebview();
+                this._updateBadge();
             }
         });
 
@@ -82,15 +97,34 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
         if (!this._view) {
             return;
         }
-        const count = this._store.getAllDrafts().length;
-        if (count > 0) {
+        try {
+            const count = this._store.getAllDrafts().length;
             this._view.badge = {
                 value: count,
-                tooltip: `${count} Draft Comments`
+                tooltip: count > 0 ? `${count} Draft Comments` : ''
             };
-        } else {
-            this._view.badge = undefined;
+        } catch {
+            // View may have been disposed between the check and the assignment
         }
+
+        // Deferred fallback: re-apply badge after a short delay to work around
+        // potential VS Code rendering timing issues where immediate badge
+        // updates may not take effect on the Activity Bar icon.
+        const view = this._view;
+        setTimeout(() => {
+            if (!view) {
+                return;
+            }
+            try {
+                const count = this._store.getAllDrafts().length;
+                view.badge = {
+                    value: count,
+                    tooltip: count > 0 ? `${count} Draft Comments` : ''
+                };
+            } catch {
+                // View may have been disposed
+            }
+        }, 150);
     }
 
     private _updateViewModeContext(): void {
@@ -131,13 +165,26 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
         const drafts = this._store.getAllDrafts();
         this._view.webview.postMessage({
             type: 'updateDrafts',
-            drafts: drafts.map(d => ({
-                id: d.id,
-                text: d.text,
-                filePath: vscode.workspace.asRelativePath(d.uri),
-                line: (d.thread.range || d.range).start.line + 1,
-                endLine: (d.thread.range || d.range).end.line + 1
-            }))
+            drafts: drafts.map(d => {
+                let line = d.range.start.line + 1;
+                let endLine = d.range.end.line + 1;
+                try {
+                    const threadRange = d.thread.range;
+                    if (threadRange) {
+                        line = threadRange.start.line + 1;
+                        endLine = threadRange.end.line + 1;
+                    }
+                } catch {
+                    // Thread may be disposed, fall back to stored range
+                }
+                return {
+                    id: d.id,
+                    text: d.text,
+                    filePath: vscode.workspace.asRelativePath(d.uri),
+                    line,
+                    endLine
+                };
+            })
         });
     }
 

@@ -22,6 +22,14 @@ export async function submitDrafts(store: DraftStore): Promise<void> {
 
     if (activePanel) {
         activePanel.reveal(vscode.ViewColumn.One);
+        // Refresh panel content with latest drafts
+        const config = vscode.workspace.getConfiguration('copilotReview');
+        const maxPreviewLines = config.get<number>('codePreviewMaxLines', 20);
+        const currentDrafts = store.getAllDrafts();
+        activePanel.webview.postMessage({
+            command: 'updateDraftsHtml',
+            html: await getDraftsHtml(currentDrafts, maxPreviewLines)
+        });
         return;
     }
 
@@ -50,7 +58,12 @@ export async function submitDrafts(store: DraftStore): Promise<void> {
     panel.webview.onDidReceiveMessage(async message => {
         if (message.command === 'submit') {
             const summary: string = message.text;
-            const prompt = await buildPrompt(summary, drafts);
+            const currentDrafts = store.getAllDrafts();
+            if (currentDrafts.length === 0) {
+                vscode.window.showWarningMessage('No drafts to submit. All drafts may have been deleted.');
+                return;
+            }
+            const prompt = await buildPrompt(summary, currentDrafts);
 
             try {
                 await vscode.commands.executeCommand('workbench.action.chat.open', {

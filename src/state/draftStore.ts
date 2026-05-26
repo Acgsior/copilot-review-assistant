@@ -10,6 +10,7 @@ const STORAGE_KEY_DRAFTS = 'copilotReview.drafts';
  */
 export class DraftStore implements vscode.Disposable {
     private drafts: DraftItem[] = [];
+    private _isPruning = false;
 
     private readonly _onDidChange = new vscode.EventEmitter<DraftItem[]>();
     readonly onDidChange = this._onDidChange.event;
@@ -89,6 +90,14 @@ export class DraftStore implements vscode.Disposable {
 
     get hasDrafts(): boolean {
         return this.drafts.length > 0;
+    }
+
+    /**
+     * Actively prune disposed threads and notify listeners.
+     * Safe to call from external event handlers (e.g. onDidCloseTextDocument).
+     */
+    pruneAndNotify(): void {
+        this._pruneDisposed();
     }
 
     // ── Persistence ─────────────────────────────────────────────────
@@ -198,28 +207,38 @@ export class DraftStore implements vscode.Disposable {
     /**
      * Remove drafts whose threads have been disposed externally.
      * Fires a change event only if any drafts were actually removed.
+     * Uses _isPruning guard to prevent infinite recursion from event listeners.
      */
     private _pruneDisposed(): void {
-        const before = this.drafts.length;
-        this.drafts = this.drafts.filter(d => this._isThreadAlive(d.thread));
-        if (this.drafts.length !== before) {
-            this._updateContext();
-            // Persist the cleaned-up state (call _persist helper directly
-            // to avoid infinite recursion since _persist also calls _pruneDisposed)
-            const serialized: SerializedDraftItem[] = this.drafts.map(d => ({
-                id: d.id,
-                text: d.text,
-                uri: d.uri.toString(),
-                range: {
-                    startLine: (d.thread.range || d.range).start.line,
-                    startCharacter: (d.thread.range || d.range).start.character,
-                    endLine: (d.thread.range || d.range).end.line,
-                    endCharacter: (d.thread.range || d.range).end.character,
-                },
-                documentLanguage: d.documentLanguage,
-                documentText: d.documentText
-            }));
-            this.workspaceState.update(STORAGE_KEY_DRAFTS, serialized);
+        if (this._isPruning) {
+            return;
+        }
+        this._isPruning = true;
+        try {
+            const before = this.drafts.length;
+            this.drafts = this.drafts.filter(d => this._isThreadAlive(d.thread));
+            if (this.drafts.length !== before) {
+                this._updateContext();
+                // Notify listeners so webview and badge update
+                this._onDidChange.fire([...this.drafts]);
+                // Persist the cleaned-up state directly to avoid recursion
+                const serialized: SerializedDraftItem[] = this.drafts.map(d => ({
+                    id: d.id,
+                    text: d.text,
+                    uri: d.uri.toString(),
+                    range: {
+                        startLine: (d.thread.range || d.range).start.line,
+                        startCharacter: (d.thread.range || d.range).start.character,
+                        endLine: (d.thread.range || d.range).end.line,
+                        endCharacter: (d.thread.range || d.range).end.character,
+                    },
+                    documentLanguage: d.documentLanguage,
+                    documentText: d.documentText
+                }));
+                this.workspaceState.update(STORAGE_KEY_DRAFTS, serialized);
+            }
+        } finally {
+            this._isPruning = false;
         }
     }
 }

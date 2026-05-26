@@ -34,6 +34,16 @@ export function activate(context: vscode.ExtensionContext) {
     const commands = registerCommands(commentController, store, draftsProvider);
     context.subscriptions.push(...commands);
 
+    // ── Proactive pruning of disposed threads ─────────────────────
+    context.subscriptions.push(
+        vscode.workspace.onDidCloseTextDocument(() => {
+            store.pruneAndNotify();
+        }),
+        vscode.window.onDidChangeVisibleTextEditors(() => {
+            store.pruneAndNotify();
+        })
+    );
+
     // ── Restore persisted drafts ────────────────────────────────────
     store.restore();
 }
