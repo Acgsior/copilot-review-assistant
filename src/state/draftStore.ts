@@ -130,7 +130,7 @@ export class DraftStore implements vscode.Disposable {
                 const comment = new PlanReviewComment(
                     item.text,
                     vscode.CommentMode.Preview,
-                    { name: '' },
+                    { name: 'Draft' },
                     thread,
                     'draft',
                     item.id

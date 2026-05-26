@@ -8,7 +8,7 @@ import { DraftStore } from '../state/draftStore';
  * Truncates code snippets exceeding 500 lines to avoid Copilot prompt limits.
  */
 export async function addDraft(reply: vscode.CommentReply, store: DraftStore): Promise<void> {
-    const userSuggestion = reply.text;
+    const userSuggestion = reply.text.trim();
     const thread = reply.thread;
     if (!thread) {
         return;
@@ -35,7 +35,7 @@ export async function addDraft(reply: vscode.CommentReply, store: DraftStore): P
         const comment = new PlanReviewComment(
             userSuggestion,
             vscode.CommentMode.Preview,
-            { name: '' },
+            { name: 'Draft' },
             thread,
             'draft',
             draftId

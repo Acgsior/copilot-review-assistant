@@ -2,6 +2,13 @@
 
 All notable changes to the "copilot-review-assistant" extension will be documented in this file.
 
+## [1.1.0] - 2026-05-27
+### Changed
+- **UI & 样式全面升级 (Antigravity IDE 风格)**: 
+  - 移除了 Webview 中原生且相对单调的 CSS，引入了更具现代感的发光焦点框（Glow Effect）、微渐变背景、更细腻的边框圆角以及悬浮阴影（Box-shadow）等高级交互设计。
+  - **组件尺寸优化**：为了避免界面占用过多屏幕空间，大幅缩小了侧边栏草稿卡片（Draft Card）的内外边距，收紧了字体大小，提供了一个更加紧凑、信息密度更高的侧边栏视图。
+  - **行内评论留白修复**：修复了 VS Code 原生评论 UI 中因硬编码空作者名字而导致上方出现巨大空白的视觉问题。现在将作者名设为 "Draft" 以合理利用占位，并在保存草稿时自动 `trim()` 去除首尾的意外空行，使得编辑器内的草稿评论更加紧凑。
+
 ## [1.0.1] - 2026-05-26
 ### Fixed
 - **徽章与侧边栏数量同步**: 修复了清空所有 Draft Comments 或是点击右上角清除按钮后，Activity Bar/Webview 侧边栏的 Draft Count 徽章（Badge）仍显示原有数字无法被清除的同步问题。通过规避 VS Code 不响应 `badge = undefined` 的 API bug，改用 `{ value: 0, tooltip: '' }` 强制重置并隐藏 Badge，从而彻底解决该同步故障。

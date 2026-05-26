@@ -23,7 +23,7 @@ export async function getSubmitWebviewContent(drafts: DraftItem[]): Promise<stri
             font-family: var(--vscode-font-family);
             padding: 30px;
             color: var(--vscode-foreground);
-            background-color: var(--vscode-editor-background);
+            background: linear-gradient(180deg, var(--vscode-editor-background) 0%, var(--vscode-sideBar-background) 100%);
             display: flex;
             flex-direction: column;
             height: 100vh;
@@ -33,33 +33,35 @@ export async function getSubmitWebviewContent(drafts: DraftItem[]): Promise<stri
         }
         h2 {
             margin-top: 0;
-            font-weight: 500;
+            font-weight: 600;
             color: var(--vscode-foreground);
+            letter-spacing: -0.5px;
         }
         p {
             font-size: 13px;
             color: var(--vscode-descriptionForeground);
-            margin-bottom: 16px;
+            margin-bottom: 20px;
         }
         textarea {
             width: 100%;
-            height: 120px;
-            margin-bottom: 16px;
+            height: 140px;
+            margin-bottom: 20px;
             background-color: var(--vscode-input-background);
             color: var(--vscode-input-foreground);
             border: 1px solid var(--vscode-input-border, var(--vscode-widget-border, transparent));
-            border-radius: 2px;
-            padding: 8px 10px;
+            border-radius: 6px;
+            padding: 12px;
             font-family: var(--vscode-font-family);
             font-size: var(--vscode-font-size, 13px);
             resize: vertical;
             box-sizing: border-box;
             outline: none;
+            transition: all 0.2s ease;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
         }
         textarea:focus {
-            outline: 1px solid var(--vscode-focusBorder);
-            outline-offset: -1px;
-            border-color: transparent;
+            border-color: var(--vscode-focusBorder);
+            box-shadow: 0 0 0 3px rgba(0, 122, 204, 0.2), inset 0 2px 4px rgba(0, 0, 0, 0.05);
         }
         h3 {
             font-size: 12px;
@@ -67,46 +69,54 @@ export async function getSubmitWebviewContent(drafts: DraftItem[]): Promise<stri
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: var(--vscode-sideBarSectionHeader-foreground, var(--vscode-foreground));
-            margin-bottom: 8px;
+            margin-bottom: 12px;
+            margin-top: 10px;
         }
         .drafts-container {
             flex: 1;
             overflow-y: auto;
-            margin-bottom: 16px;
-            border-radius: 2px;
+            margin-bottom: 20px;
+            border-radius: 6px;
             border: 1px solid var(--vscode-widget-border, transparent);
-            padding: 8px;
+            padding: 12px;
             background: var(--vscode-editorWidget-background);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
         }
         .draft-card {
             background-color: var(--vscode-editor-background);
             border: 1px solid var(--vscode-widget-border, transparent);
-            border-radius: 2px;
-            padding: 10px;
-            margin-bottom: 8px;
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 12px;
+            transition: all 0.2s ease;
+        }
+        .draft-card:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            transform: translateY(-1px);
         }
         .draft-card:last-child {
             margin-bottom: 0;
         }
         .draft-header {
-            font-size: 12px;
+            font-size: 13px;
             color: var(--vscode-textLink-foreground);
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             font-weight: 600;
         }
         .draft-body {
             font-size: 13px;
-            line-height: 1.5;
+            line-height: 1.6;
             white-space: pre-wrap;
             word-wrap: break-word;
             color: var(--vscode-foreground);
         }
         /* Code preview */
         .code-preview {
-            margin-top: 8px;
+            margin-top: 12px;
             border: 1px solid var(--vscode-widget-border, transparent);
-            border-radius: 2px;
+            border-radius: 4px;
             overflow: hidden;
+            background: var(--vscode-textCodeBlock-background, rgba(0,0,0,0.05));
         }
         .code-preview[open] .chevron-icon {
             transform: rotate(90deg);
@@ -114,27 +124,32 @@ export async function getSubmitWebviewContent(drafts: DraftItem[]): Promise<stri
         .code-preview-toggle {
             display: flex;
             align-items: center;
-            gap: 6px;
-            padding: 6px 8px;
+            gap: 8px;
+            padding: 8px 10px;
             font-size: 12px;
             color: var(--vscode-descriptionForeground);
             cursor: pointer;
-            background: var(--vscode-editorWidget-background);
+            background: rgba(128, 128, 128, 0.05);
             user-select: none;
             list-style: none;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        .code-preview-toggle:hover {
+            background: rgba(128, 128, 128, 0.1);
         }
         .code-preview-toggle::-webkit-details-marker {
             display: none;
         }
         .chevron-icon {
-            font-size: 8px;
-            transition: transform 0.15s ease;
+            font-size: 10px;
+            transition: transform 0.2s ease;
             display: inline-block;
         }
         .code-block {
             margin: 0;
-            padding: 8px 10px;
-            background: var(--vscode-textCodeBlock-background, var(--vscode-editor-background));
+            padding: 12px;
+            background: transparent;
             font-family: var(--vscode-editor-font-family);
             font-size: var(--vscode-editor-font-size);
             line-height: 1.5;
@@ -148,24 +163,32 @@ export async function getSubmitWebviewContent(drafts: DraftItem[]): Promise<stri
         /* Buttons */
         .button-group {
             display: flex;
-            gap: 8px;
-            margin-top: 8px;
+            gap: 12px;
+            margin-top: 10px;
+            margin-bottom: 10px;
         }
         button {
-            padding: 6px 14px;
+            padding: 8px 18px;
             border: none;
-            border-radius: 2px;
+            border-radius: 4px;
             cursor: pointer;
             font-size: 13px;
+            font-weight: 600;
             font-family: var(--vscode-font-family);
-            transition: opacity 0.15s;
+            transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
         .btn-primary {
-            background-color: var(--vscode-button-background);
+            background: linear-gradient(135deg, var(--vscode-button-background) 0%, rgba(0, 122, 204, 0.8) 100%);
             color: var(--vscode-button-foreground);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         .btn-primary:hover {
-            background-color: var(--vscode-button-hoverBackground);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+            filter: brightness(1.1);
+        }
+        .btn-primary:active {
+            transform: translateY(0);
         }
         .btn-secondary {
             background-color: var(--vscode-button-secondaryBackground);

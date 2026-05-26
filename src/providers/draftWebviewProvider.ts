@@ -207,23 +207,26 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
         .draft-card {
             background-color: var(--vscode-editorWidget-background);
             border: 1px solid var(--vscode-widget-border, transparent);
-            border-radius: 2px;
-            padding: 8px;
+            border-radius: 4px;
+            padding: 6px 8px;
             margin-bottom: 6px;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 4px;
             cursor: pointer;
-            transition: background-color 0.1s;
+            transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         }
         .draft-card:hover {
             background-color: var(--vscode-list-hoverBackground);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         .draft-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 12px;
+            font-size: 11px;
             color: var(--vscode-descriptionForeground);
         }
         .draft-file {
@@ -232,8 +235,8 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
             word-break: break-all;
         }
         .draft-text {
-            font-size: 13px;
-            line-height: 1.5;
+            font-size: 12px;
+            line-height: 1.4;
             word-wrap: break-word;
             white-space: pre-wrap;
             color: var(--vscode-foreground);
@@ -243,49 +246,57 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
             gap: 2px;
         }
         .icon-btn {
-            background: none;
+            background: rgba(128, 128, 128, 0.1);
             border: none;
             color: var(--vscode-icon-foreground);
             cursor: pointer;
             padding: 4px;
-            opacity: 0.7;
+            opacity: 0.8;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 3px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
         }
         .icon-btn:hover {
             opacity: 1;
             background-color: var(--vscode-toolbar-hoverBackground);
+            transform: scale(1.05);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         .empty-state {
             text-align: center;
-            padding: 20px;
+            padding: 30px 20px;
             color: var(--vscode-descriptionForeground);
             font-size: 13px;
+            animation: fadeIn 0.4s ease-out forwards;
         }
         /* ── Grouped view styles ─── */
         .file-group {
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
         .file-group-header {
             display: flex;
             align-items: center;
             gap: 6px;
-            padding: 4px 6px;
+            padding: 6px 8px;
             cursor: pointer;
             user-select: none;
             font-size: 12px;
             font-weight: 600;
             color: var(--vscode-foreground);
-            border-radius: 2px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
         }
         .file-group-header:hover {
             background-color: var(--vscode-list-hoverBackground);
         }
         .file-group-chevron {
             font-size: 8px;
-            transition: transform 0.15s ease;
+            transition: transform 0.2s ease;
             display: inline-block;
         }
         .file-group.collapsed .file-group-chevron {
@@ -304,19 +315,22 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
             color: var(--vscode-badge-foreground);
             font-size: 11px;
             font-weight: 600;
-            padding: 1px 6px;
+            padding: 2px 6px;
             border-radius: 10px;
             min-width: 16px;
             text-align: center;
         }
         .file-group-items {
             padding-left: 12px;
+            margin-top: 6px;
         }
         .file-group.collapsed .file-group-items {
             display: none;
         }
         .file-group .draft-card {
-            border-left: 2px solid var(--vscode-textLink-foreground);
+            border-left: 3px solid var(--vscode-textLink-foreground);
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
         }
         .file-group .draft-file {
             color: var(--vscode-descriptionForeground);
