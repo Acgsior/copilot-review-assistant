@@ -35,7 +35,6 @@ export async function getSubmitWebviewContent(drafts: DraftItem[]): Promise<stri
             margin-top: 0;
             font-weight: 600;
             color: var(--vscode-foreground);
-            letter-spacing: -0.5px;
         }
         p {
             font-size: 13px;
@@ -64,10 +63,8 @@ export async function getSubmitWebviewContent(drafts: DraftItem[]): Promise<stri
             box-shadow: 0 0 0 3px rgba(0, 122, 204, 0.2), inset 0 2px 4px rgba(0, 0, 0, 0.05);
         }
         h3 {
-            font-size: 12px;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
             color: var(--vscode-sideBarSectionHeader-foreground, var(--vscode-foreground));
             margin-bottom: 12px;
             margin-top: 10px;
@@ -102,6 +99,10 @@ export async function getSubmitWebviewContent(drafts: DraftItem[]): Promise<stri
             color: var(--vscode-textLink-foreground);
             margin-bottom: 8px;
             font-weight: 600;
+        }
+        .draft-line-number {
+            color: var(--vscode-textPreformat-foreground);
+            font-weight: normal;
         }
         .draft-body {
             font-size: 13px;
@@ -202,7 +203,7 @@ export async function getSubmitWebviewContent(drafts: DraftItem[]): Promise<stri
 <body>
     <h2>Submit Draft Comments</h2>
     <p>Add your instructions or questions below. This summary will be sent to Copilot Chat along with all the selected code snippets.</p>
-    <textarea id="summaryText" placeholder="Write your summary here..." autofocus></textarea>
+    <textarea id="summaryText" placeholder="Write your instructions here..." autofocus></textarea>
     
     <div class="button-group">
         <button id="submitBtn" class="btn-primary">Submit to Copilot Chat</button>
@@ -263,7 +264,7 @@ export async function getDraftsHtml(drafts: DraftItem[], maxPreviewLines: number
             <details class="code-preview">
                 <summary class="code-preview-toggle">
                     <span class="chevron-icon">&#9654;</span>
-                    Code snippet (Lines ${startLine}-${endLine}, ${allLines.length} lines)
+                    Code snippet <span class="draft-line-number">(${startLine === endLine ? `Line ${startLine}` : `Lines ${startLine}-${endLine}`}, ${allLines.length} ${allLines.length === 1 ? 'line' : 'lines'})</span>
                 </summary>
                 <pre class="code-block"><code>${displayCode}${escapeHtml(suffix)}</code></pre>
             </details>`;
@@ -272,7 +273,7 @@ export async function getDraftsHtml(drafts: DraftItem[], maxPreviewLines: number
         const bodyHtml = draft.text.trim() ? `<div class="draft-body">${escapeHtml(draft.text)}</div>` : '';
 
         return `<div class="draft-card">
-            <div class="draft-header">${escapeHtml(filePath)} (Lines ${startLine}-${endLine})</div>
+            <div class="draft-header">${escapeHtml(filePath)} <span class="draft-line-number">(${startLine === endLine ? `Line ${startLine}` : `Lines ${startLine}-${endLine}`})</span></div>
             ${bodyHtml}
             ${codePreviewHtml}
         </div>`;

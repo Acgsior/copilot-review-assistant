@@ -2,6 +2,13 @@
 
 All notable changes to the "copilot-review-assistant" extension will be documented in this file.
 
+## [1.1.1] - 2026-05-28
+### Changed
+- **行号展示优化**:
+  - 当草稿评论仅跨越单行代码时，所有相关视图（侧边栏、提交预览以及 Copilot Prompt）均统一将标签收敛为单数形式（例如 `Line 5` 替代 `Lines 5-5`），并修复了相应的单复数单位显示。
+  - 为所有界面中的行号添加了独立的 CSS 类 `.draft-line-number` 并采用更为醒目的颜色（`var(--vscode-textPreformat-foreground)`），使其在视觉上与文件名完全独立，避免视觉层级的混淆。
+  - 将原先 VS Code 原生评论 UI 中硬编码的 "Draft" 作者名，重构为动态显示该草稿关联的实际行号（例如 `Line 10` 或 `Lines 10-20`），提供更加一体化、沉浸式的视图体验。
+
 ## [1.1.0] - 2026-05-27
 ### Changed
 - **UI & 样式全面升级 (Antigravity IDE 风格)**: 

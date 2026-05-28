@@ -216,6 +216,9 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
             cursor: pointer;
             transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            border-left: 3px solid var(--vscode-textLink-foreground);
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
         }
         .draft-card:hover {
             background-color: var(--vscode-list-hoverBackground);
@@ -233,6 +236,10 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
             font-weight: 600;
             color: var(--vscode-textLink-foreground);
             word-break: break-all;
+        }
+        .draft-line-number {
+            color: var(--vscode-textPreformat-foreground);
+            font-weight: normal;
         }
         .draft-text {
             font-size: 12px;
@@ -285,7 +292,7 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
             padding: 6px 8px;
             cursor: pointer;
             user-select: none;
-            font-size: 12px;
+            font-size: 14px;
             font-weight: 600;
             color: var(--vscode-foreground);
             border-radius: 4px;
@@ -295,7 +302,8 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
             background-color: var(--vscode-list-hoverBackground);
         }
         .file-group-chevron {
-            font-size: 8px;
+            margin-top: 2px;
+            font-size: 7px;
             transition: transform 0.2s ease;
             display: inline-block;
         }
@@ -326,11 +334,6 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
         }
         .file-group.collapsed .file-group-items {
             display: none;
-        }
-        .file-group .draft-card {
-            border-left: 3px solid var(--vscode-textLink-foreground);
-            border-top-left-radius: 0;
-            border-bottom-left-radius: 0;
         }
         .file-group .draft-file {
             color: var(--vscode-descriptionForeground);
@@ -380,7 +383,8 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
 
         function renderFlat(drafts) {
             drafts.forEach(draft => {
-                const label = draft.filePath + ' (Lines ' + draft.line + '-' + draft.endLine + ')';
+                const lineInfo = draft.line === draft.endLine ? 'Line ' + draft.line : 'Lines ' + draft.line + '-' + draft.endLine;
+                const label = escapeHtml(draft.filePath) + ' <span class="draft-line-number">(' + lineInfo + ')</span>';
                 container.appendChild(createDraftCard(draft, label));
             });
         }
@@ -416,7 +420,8 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
                 const itemsContainer = document.createElement('div');
                 itemsContainer.className = 'file-group-items';
                 items.forEach(draft => {
-                    const label = 'Lines ' + draft.line + '-' + draft.endLine;
+                    const lineInfo = draft.line === draft.endLine ? 'Line ' + draft.line : 'Lines ' + draft.line + '-' + draft.endLine;
+                    const label = '<span class="draft-line-number">' + lineInfo + '</span>';
                     itemsContainer.appendChild(createDraftCard(draft, label));
                 });
 
@@ -442,7 +447,7 @@ export class DraftsWebviewProvider implements vscode.WebviewViewProvider {
 
             const fileInfo = document.createElement('span');
             fileInfo.className = 'draft-file';
-            fileInfo.textContent = headerLabel;
+            fileInfo.innerHTML = headerLabel;
 
             const actionsDiv = document.createElement('div');
             actionsDiv.className = 'draft-actions';

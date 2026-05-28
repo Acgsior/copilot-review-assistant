@@ -126,11 +126,15 @@ export class DraftStore implements vscode.Disposable {
                 thread.collapsibleState = vscode.CommentThreadCollapsibleState.Expanded;
                 thread.label = 'Draft Comment';
 
+                const startLine = item.range.startLine + 1;
+                const endLine = item.range.endLine + 1;
+                const authorName = startLine === endLine ? `Line ${startLine}` : `Lines ${startLine}-${endLine}`;
+
                 // Recreate the comment inside the thread
                 const comment = new PlanReviewComment(
                     item.text,
                     vscode.CommentMode.Preview,
-                    { name: 'Draft' },
+                    { name: authorName },
                     thread,
                     'draft',
                     item.id

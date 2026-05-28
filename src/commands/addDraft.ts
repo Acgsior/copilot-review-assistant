@@ -32,10 +32,14 @@ export async function addDraft(reply: vscode.CommentReply, store: DraftStore): P
 
         const draftId = `draft-${Date.now()}`;
 
+        const startLine = range.start.line + 1;
+        const endLine = range.end.line + 1;
+        const authorName = startLine === endLine ? `Line ${startLine}` : `Lines ${startLine}-${endLine}`;
+
         const comment = new PlanReviewComment(
             userSuggestion,
             vscode.CommentMode.Preview,
-            { name: 'Draft' },
+            { name: authorName },
             thread,
             'draft',
             draftId

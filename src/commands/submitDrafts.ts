@@ -134,10 +134,10 @@ async function buildDraftEntry(draft: DraftItem, template: string, inlineThresho
     let fileReference: string;
 
     if (lineCount > inlineThreshold) {
-        fileReference = `${filePath}#L${startLine}~L${endLine}`;
+        fileReference = startLine === endLine ? `${filePath}#L${startLine}` : `${filePath}#L${startLine}~L${endLine}`;
         codeBlock = '';
     } else {
-        fileReference = `\`${filePath}\` (Lines ${startLine}-${endLine})`;
+        fileReference = `\`${filePath}\` (${startLine === endLine ? `Line ${startLine}` : `Lines ${startLine}-${endLine}`})`;
         const indentedCode = documentText.split('\n').join('\n  ');
         codeBlock = `\`\`\`${draft.documentLanguage}\n  ${indentedCode}\n  \`\`\``;
     }
