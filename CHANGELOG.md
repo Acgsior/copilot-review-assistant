@@ -2,6 +2,25 @@
 
 All notable changes to the "copilot-review-assistant" extension will be documented in this file.
 
+## [1.2.0] - 2026-06-04
+### Added
+- **UI & Interaction Upgrades (Submit Panel)**:
+  - Redesigned the Submit Drafts Webview with a two-pane layout: a left editing panel and a right live-preview panel.
+  - Implemented drag-and-drop support to easily reorder drafts before submission.
+  - Added checkboxes to individual drafts, allowing users to selectively submit certain drafts while retaining others in the workspace.
+  - Enabled inline editing of draft comments directly within the Submit panel (supports `Enter` for newlines, `Shift+Enter` or clicking outside to save).
+- **Prompt Styles**: 
+  - Introduced standard prompt style presets (`Concise` and `Detailed`) selectable via a dropdown in the Submit panel.
+  - Removed outdated configuration fields (`promptTemplate`, `draftTemplate`, `inlineCodeThreshold`). Now entirely driven by the `copilotReview.promptStyle` configuration.
+  
+### Changed
+- **Sidebar Visual Enhancements**:
+  - Added a code preview snippet (first 3 lines) to each draft card in the sidebar.
+  - Adjusted hover behaviors, action buttons (now appear on hover), and empty states (added descriptive icons and help text).
+- **Refactoring & Performance**:
+  - Re-architected `submitDrafts` and separated prompt building logic into an independent `promptBuilder` module.
+  - Changed the internal data flow to persist ordering and partial draft removal smoothly.
+
 ## [1.1.1] - 2026-05-28
 ### Changed
 - **行号展示优化**:

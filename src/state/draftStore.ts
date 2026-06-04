@@ -93,6 +93,44 @@ export class DraftStore implements vscode.Disposable {
     }
 
     /**
+     * Reorder drafts according to the given array of IDs.
+     * IDs not present in the array are appended at the end in their original order.
+     */
+    reorderDrafts(orderedIds: string[]): void {
+        const idToIndex = new Map(orderedIds.map((id, i) => [id, i]));
+        this.drafts.sort((a, b) => {
+            const ai = idToIndex.get(a.id) ?? Number.MAX_SAFE_INTEGER;
+            const bi = idToIndex.get(b.id) ?? Number.MAX_SAFE_INTEGER;
+            return ai - bi;
+        });
+        this._fireChange();
+    }
+
+    /**
+     * Remove a batch of drafts by their IDs and clean up associated threads.
+     * Only disposes a thread if it has no remaining comments.
+     */
+    removeSelectedDrafts(ids: string[]): void {
+        const idSet = new Set(ids);
+        const toRemove = this.drafts.filter(d => idSet.has(d.id));
+        for (const draft of toRemove) {
+            try {
+                const comments = draft.thread.comments.filter(
+                    c => (c as PlanReviewComment).draftId !== draft.id
+                );
+                draft.thread.comments = comments;
+                if (comments.length === 0) {
+                    draft.thread.dispose();
+                }
+            } catch {
+                // Thread may already be disposed
+            }
+        }
+        this.drafts = this.drafts.filter(d => !idSet.has(d.id));
+        this._fireChange();
+    }
+
+    /**
      * Actively prune disposed threads and notify listeners.
      * Safe to call from external event handlers (e.g. onDidCloseTextDocument).
      */

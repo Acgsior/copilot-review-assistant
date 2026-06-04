@@ -2,16 +2,16 @@ import * as vscode from 'vscode';
 import { DraftStore } from '../state/draftStore';
 import { DraftItem } from '../models/draftItem';
 import { getSubmitWebviewContent, getDraftsHtml } from '../webviews/submitWebview';
+import { buildPrompt, PromptStyle } from '../promptBuilder';
 
 let activePanel: vscode.WebviewPanel | undefined = undefined;
 
 /**
- * Opens the Submit Plan Review webview panel, allowing the user to write
- * a summary and submit all drafts to Copilot Chat.
+ * Opens the Submit Plan Review webview panel, allowing the user to
+ * reorder, select, and edit drafts before submitting to Copilot Chat.
  *
- * Uses configurable prompt/draft templates and an inline code threshold:
- * - Code snippets longer than `inlineCodeThreshold` are referenced by
- *   file path and line range (e.g. `README.md#L10~L35`) instead of inlined.
+ * The panel uses a split layout with a live prompt preview that
+ * supports both Markdown-rendered and raw-text views.
  */
 export async function submitDrafts(store: DraftStore): Promise<void> {
     const drafts = store.getAllDrafts();
@@ -20,10 +20,11 @@ export async function submitDrafts(store: DraftStore): Promise<void> {
         return;
     }
 
+    const config = vscode.workspace.getConfiguration('copilotReview');
+    const defaultStyle = config.get<string>('promptStyle', 'concise');
+
     if (activePanel) {
         activePanel.reveal(vscode.ViewColumn.One);
-        // Refresh panel content with latest drafts
-        const config = vscode.workspace.getConfiguration('copilotReview');
         const maxPreviewLines = config.get<number>('codePreviewMaxLines', 20);
         const currentDrafts = store.getAllDrafts();
         activePanel.webview.postMessage({
@@ -40,13 +41,12 @@ export async function submitDrafts(store: DraftStore): Promise<void> {
         { enableScripts: true }
     );
 
-    panel.webview.html = await getSubmitWebviewContent(drafts);
+    panel.webview.html = await getSubmitWebviewContent(drafts, defaultStyle);
     activePanel = panel;
 
     const disposable = store.onDidChange(async () => {
         if (activePanel) {
             const currentDrafts = store.getAllDrafts();
-            const config = vscode.workspace.getConfiguration('copilotReview');
             const maxPreviewLines = config.get<number>('codePreviewMaxLines', 20);
             activePanel.webview.postMessage({
                 command: 'updateDraftsHtml',
@@ -56,27 +56,81 @@ export async function submitDrafts(store: DraftStore): Promise<void> {
     });
 
     panel.webview.onDidReceiveMessage(async message => {
-        if (message.command === 'submit') {
-            const summary: string = message.text;
-            const currentDrafts = store.getAllDrafts();
-            if (currentDrafts.length === 0) {
-                vscode.window.showWarningMessage('No drafts to submit. All drafts may have been deleted.');
-                return;
+        switch (message.command) {
+            case 'submit': {
+                const selectedIds: string[] = message.selectedIds || [];
+                const currentDrafts = store.getAllDrafts();
+                if (currentDrafts.length === 0) {
+                    vscode.window.showWarningMessage('No drafts to submit. All drafts may have been deleted.');
+                    return;
+                }
+
+                // Build prompt from only the selected drafts in the specified order
+                const selectedDrafts = getOrderedSelectedDrafts(currentDrafts, selectedIds, message.orderedIds);
+                if (selectedDrafts.length === 0) {
+                    vscode.window.showWarningMessage('No drafts selected.');
+                    return;
+                }
+
+                const style = (message.style || defaultStyle) as PromptStyle;
+                const prompt = await buildPrompt(message.text || '', selectedDrafts, style);
+
+                try {
+                    await vscode.commands.executeCommand('workbench.action.chat.open', {
+                        query: prompt
+                    });
+
+                    // Only clear the selected (submitted) drafts; keep unselected ones
+                    store.removeSelectedDrafts(selectedIds);
+
+                    // If all drafts were submitted, close the panel
+                    if (store.getAllDrafts().length === 0) {
+                        panel.dispose();
+                    }
+                } catch (error) {
+                    vscode.window.showErrorMessage(`Failed to open Copilot Chat: ${error}`);
+                }
+                break;
             }
-            const prompt = await buildPrompt(summary, currentDrafts);
 
-            try {
-                await vscode.commands.executeCommand('workbench.action.chat.open', {
-                    query: prompt
-                });
-
-                store.clearDrafts();
+            case 'cancel':
                 panel.dispose();
-            } catch (error) {
-                vscode.window.showErrorMessage(`Failed to open Copilot Chat: ${error}`);
+                break;
+
+            case 'requestPreview': {
+                const currentDrafts = store.getAllDrafts();
+                const selectedIds: string[] = message.selectedIds || [];
+                const orderedIds: string[] = message.orderedIds || [];
+                const style = (message.style || defaultStyle) as PromptStyle;
+                const summary: string = message.text || '';
+
+                const selectedDrafts = getOrderedSelectedDrafts(currentDrafts, selectedIds, orderedIds);
+                const raw = await buildPrompt(summary, selectedDrafts, style);
+                const markdown = renderMarkdownToHtml(raw);
+
+                panel.webview.postMessage({
+                    command: 'previewResult',
+                    markdown,
+                    raw
+                });
+                break;
             }
-        } else if (message.command === 'cancel') {
-            panel.dispose();
+
+            case 'updateDraftText': {
+                const { id, text } = message;
+                if (id) {
+                    store.updateDraftText(id, text || '');
+                }
+                break;
+            }
+
+            case 'reorderDrafts': {
+                const orderedIds: string[] = message.orderedIds || [];
+                if (orderedIds.length > 0) {
+                    store.reorderDrafts(orderedIds);
+                }
+                break;
+            }
         }
     });
 
@@ -86,76 +140,135 @@ export async function submitDrafts(store: DraftStore): Promise<void> {
     });
 }
 
-// ── Prompt building ─────────────────────────────────────────────────
+// ── Helpers ─────────────────────────────────────────────────────────
 
-async function buildPrompt(summary: string, drafts: DraftItem[]): Promise<string> {
-    const config = vscode.workspace.getConfiguration('copilotReview');
-    const promptTemplate = config.get<string>(
-        'promptTemplate',
-        '${summary}\n\n---\n\nComplete changes:\n\n${drafts}'
-    );
-    const draftTemplate = config.get<string>(
-        'draftTemplate',
-        '- ${fileReference}\n  ${codeBlock}\n  ${comment}\n\n'
-    );
-    const inlineThreshold = config.get<number>('inlineCodeThreshold', 10);
+/**
+ * Resolve the subset of drafts that are selected, in the order
+ * specified by orderedIds (falls back to the store order).
+ */
+function getOrderedSelectedDrafts(
+    allDrafts: DraftItem[],
+    selectedIds: string[],
+    orderedIds?: string[]
+): DraftItem[] {
+    const draftMap = new Map(allDrafts.map(d => [d.id, d]));
+    const selectedSet = new Set(selectedIds);
 
-    const entries = await Promise.all(drafts.map(draft => buildDraftEntry(draft, draftTemplate, inlineThreshold)));
-    const draftsStr = entries.join('');
+    // Use orderedIds if available; otherwise fall back to allDrafts order
+    const order = orderedIds && orderedIds.length > 0
+        ? orderedIds
+        : allDrafts.map(d => d.id);
 
-    let result = promptTemplate
-        .replace('${summary}', summary || '')
-        .replace('${drafts}', draftsStr);
+    return order
+        .filter(id => selectedSet.has(id))
+        .map(id => draftMap.get(id))
+        .filter((d): d is DraftItem => d !== undefined);
+}
 
-    // Clean up: if no summary was provided, remove the leading separator
-    if (!summary) {
-        result = result.replace(/^\s*\n*---\n*/m, '').trimStart();
+/**
+ * Very lightweight Markdown-to-HTML renderer for the preview panel.
+ * Handles headings, bold, inline code, fenced code blocks, blockquotes,
+ * ordered lists, horizontal rules, and paragraphs. This avoids pulling
+ * in a full markdown library for the webview.
+ */
+function renderMarkdownToHtml(md: string): string {
+    const lines = md.split('\n');
+    const html: string[] = [];
+    let inCodeBlock = false;
+    let codeBlockLines: string[] = [];
+    let inList = false;
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+
+        // Fenced code blocks
+        if (line.startsWith('```')) {
+            if (inCodeBlock) {
+                html.push(`<pre><code>${escapeHtml(codeBlockLines.join('\n'))}</code></pre>`);
+                codeBlockLines = [];
+                inCodeBlock = false;
+            } else {
+                inCodeBlock = true;
+            }
+            continue;
+        }
+        if (inCodeBlock) {
+            codeBlockLines.push(line);
+            continue;
+        }
+
+        // Close open list
+        if (inList && !/^\d+\.\s/.test(line)) {
+            html.push('</ol>');
+            inList = false;
+        }
+
+        // Horizontal rule
+        if (/^---+\s*$/.test(line)) {
+            html.push('<hr>');
+            continue;
+        }
+
+        // Headings
+        const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+        if (headingMatch) {
+            const level = headingMatch[1].length;
+            html.push(`<h${level}>${inlineFormat(headingMatch[2])}</h${level}>`);
+            continue;
+        }
+
+        // Blockquote
+        if (line.startsWith('> ') || line === '>') {
+            const content = line.startsWith('> ') ? line.slice(2) : '';
+            html.push(`<blockquote>${inlineFormat(content)}</blockquote>`);
+            continue;
+        }
+
+        // Ordered list
+        const listMatch = line.match(/^(\d+)\.\s+(.+)$/);
+        if (listMatch) {
+            if (!inList) {
+                html.push('<ol>');
+                inList = true;
+            }
+            html.push(`<li>${inlineFormat(listMatch[2])}</li>`);
+            continue;
+        }
+
+        // Empty line
+        if (line.trim() === '') {
+            continue;
+        }
+
+        // Paragraph
+        html.push(`<p>${inlineFormat(line)}</p>`);
     }
 
+    // Close any open blocks
+    if (inCodeBlock) {
+        html.push(`<pre><code>${escapeHtml(codeBlockLines.join('\n'))}</code></pre>`);
+    }
+    if (inList) {
+        html.push('</ol>');
+    }
+
+    return html.join('\n');
+}
+
+function inlineFormat(text: string): string {
+    let result = escapeHtml(text);
+    // Bold: **text**
+    result = result.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    // Inline code: `text`
+    result = result.replace(/`([^`]+)`/g, '<code>$1</code>');
     return result;
 }
 
-async function buildDraftEntry(draft: DraftItem, template: string, inlineThreshold: number): Promise<string> {
-    const filePath = vscode.workspace.asRelativePath(draft.uri);
-    const startLine = (draft.thread.range || draft.range).start.line + 1;
-    const endLine = (draft.thread.range || draft.range).end.line + 1;
-
-    let documentText = draft.documentText;
-    try {
-        const document = await vscode.workspace.openTextDocument(draft.uri);
-        documentText = document.getText(draft.thread.range || draft.range);
-    } catch (e) {
-        // fallback to snapshot
-    }
-
-    const lineCount = documentText.split('\n').length;
-
-    let codeBlock: string;
-    let fileReference: string;
-
-    if (lineCount > inlineThreshold) {
-        fileReference = startLine === endLine ? `${filePath}#L${startLine}` : `${filePath}#L${startLine}~L${endLine}`;
-        codeBlock = '';
-    } else {
-        fileReference = `\`${filePath}\` (${startLine === endLine ? `Line ${startLine}` : `Lines ${startLine}-${endLine}`})`;
-        const indentedCode = documentText.split('\n').join('\n  ');
-        codeBlock = `\`\`\`${draft.documentLanguage}\n  ${indentedCode}\n  \`\`\``;
-    }
-
-    const commentStr = draft.text.trim() ? `${draft.text}` : '';
-
-    let formattedEntry = template
-        .replace('- `${filePath}` (Lines ${startLine}-${endLine})', '- ${fileReference}') // fallback for old custom templates
-        .replace('${filePath}', filePath)
-        .replace('${startLine}', String(startLine))
-        .replace('${endLine}', String(endLine))
-        .replace('${language}', draft.documentLanguage)
-        .replace('${code}', documentText)
-        .replace('${fileReference}', fileReference)
-        .replace('${codeBlock}', codeBlock)
-        .replace('${comment}', commentStr)
-        .replace(/\n[ \t]*\n[ \t]*\n/g, '\n\n') // clean up extra empty lines if codeBlock or comment is empty
-        .replace(/[ \t]+\n/g, '\n'); // remove trailing whitespace on empty lines
-
-    return formattedEntry;
+function escapeHtml(unsafe: string): string {
+    return unsafe
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }

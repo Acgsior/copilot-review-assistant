@@ -4,7 +4,7 @@
   "description": "Send code snippets and review plans to Copilot Chat seamlessly via inline comments.",
   "publisher": "morganqin",
   "author": "Morgan Qin",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "icon": "icon.png",
   "engines": {
     "vscode": "^1.80.0"
@@ -174,15 +174,15 @@
     "configuration": {
       "title": "Copilot Review Assistant",
       "properties": {
-        "copilotReview.promptTemplate": {
+        "copilotReview.promptStyle": {
           "type": "string",
-          "default": "${summary}\n\n---\n\nComplete changes:\n\n${drafts}",
-          "markdownDescription": "Template for the prompt sent to Copilot Chat. Available variables: `${summary}`, `${drafts}`"
-        },
-        "copilotReview.draftTemplate": {
-          "type": "string",
-          "default": "- ${fileReference}\n  ${codeBlock}\n  ${comment}\n\n",
-          "markdownDescription": "Template for each draft item. Variables: `${filePath}`, `${startLine}`, `${endLine}`, `${language}`, `${code}`, `${codeBlock}`, `${comment}`"
+          "enum": ["concise", "detailed"],
+          "default": "concise",
+          "enumDescriptions": [
+            "Concise: File references with comments only, no inline code",
+            "Detailed: Includes full code blocks with comments"
+          ],
+          "markdownDescription": "Default prompt style for submitting to Copilot Chat. Can also be changed per-submission in the Submit panel."
         },
         "copilotReview.codePreviewMaxLines": {
           "type": "number",
@@ -190,13 +190,6 @@
           "minimum": 0,
           "maximum": 20,
           "markdownDescription": "Max lines of code to show in the submit preview panel (0-20). Snippets longer than this are truncated with an ellipsis."
-        },
-        "copilotReview.inlineCodeThreshold": {
-          "type": "number",
-          "default": 10,
-          "minimum": 1,
-          "maximum": 100,
-          "markdownDescription": "When submitting to Copilot Chat, code snippets with more lines than this threshold will be referenced by file path and line numbers (e.g. `file.ts#L10~L35`) instead of being inlined."
         }
       }
     },
